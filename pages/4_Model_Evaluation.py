@@ -1,15 +1,10 @@
 """
-SMS Shield 2.0 - Page 4: Model Evaluation
+SMS Shield 4.0 - Page 4: Model Performance & Diagnostic Lab
 Author: SMS Shield NLP Project
 
-Comprehensive comparative analysis of Multinomial Naive Bayes, Logistic Regression,
-and Linear Support Vector Machine across:
-- Quantitative metrics (Accuracy, Precision, Recall, F1-Score, ROC-AUC)
-- Confusion Matrices (counts and percentages)
-- ROC Curves & Precision-Recall Curves
-- 5-Fold Stratified Cross-Validation
-- TF-IDF N-gram & Feature Capacity Experiments (Configs A, B, C)
-- Historical Baseline Comparison
+Comprehensive statistical validation across held-out test split (n=1,035):
+Multi-algorithm metrics, side-by-side Confusion Matrices, ROC/PR curves,
+5-Fold Stratified Cross-Validation, and TF-IDF n-gram capacity experiments.
 """
 
 import sys
@@ -21,11 +16,28 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.ui_components import render_header, render_sidebar_status, get_evaluation_metrics
+from src.ui_components import (
+    render_header,
+    render_sidebar_status,
+    render_kpi_card,
+    get_evaluation_metrics,
+)
+from src.ui_theme import (
+    CARD_BG,
+    BORDER_COLOR,
+    PRIMARY_VIOLET,
+    CYAN_ACCENT,
+    SUCCESS_GREEN,
+    DANGER_RED,
+    TEXT_PRIMARY,
+    TEXT_MUTED,
+)
 
-
-st.set_page_config(page_title="Model Evaluation | SMS Shield 2.0", page_icon="📈", layout="wide")
-render_header("Page 4: Machine Learning Model Evaluation & Comparative Diagnostics", "Rigorous statistical assessment of 3 models across hold-out test split, cross-validation, and ROC/PR curves.")
+st.set_page_config(page_title="Model Performance | SMS Shield 4.0", page_icon="📈", layout="wide")
+render_header(
+    "Model Performance & Diagnostic Lab",
+    "Rigorous statistical validation across held-out test split, 5-fold cross-validation, and ROC/PR curves."
+)
 render_sidebar_status()
 
 # Load evaluation data
@@ -40,12 +52,49 @@ except Exception as e:
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 1. Main Quantitative Comparison Table
+# 1. High-Level Model Cards
+# -----------------------------------------------------------------------------
+c1, c2, c3 = st.columns(3)
+for idx, (col, row) in enumerate(zip([c1, c2, c3], metrics_df.itertuples())):
+    border_accent = PRIMARY_VIOLET if "Naive" in row.Model else (CYAN_ACCENT if "Logistic" in row.Model else SUCCESS_GREEN)
+    with col:
+        st.markdown(
+            f"""
+            <div class="cyber-card" style="border-top: 3px solid {border_accent}; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 700; font-size: 1.05rem; color: #F8FAFC;">{row.Model}</span>
+                    <span class="status-pill active" style="font-size: 0.74rem;">TEST SET</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;">
+                    <div>
+                        <div style="font-size: 0.74rem; color: #94A3B8; text-transform: uppercase;">Accuracy</div>
+                        <div style="font-size: 1.25rem; font-weight: 800; color: #F8FAFC;">{row.Accuracy:.2%}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.74rem; color: #94A3B8; text-transform: uppercase;">Spam F1-Score</div>
+                        <div style="font-size: 1.25rem; font-weight: 800; color: #38BDF8;">{row._5:.2%}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.74rem; color: #94A3B8; text-transform: uppercase;">Precision</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #34D399;">{row.Precision:.2%}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.74rem; color: #94A3B8; text-transform: uppercase;">Recall</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #F87171;">{row.Recall:.2%}</div>
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+# -----------------------------------------------------------------------------
+# 2. Main Quantitative Comparison Table
 # -----------------------------------------------------------------------------
 st.markdown("### 📋 Test Set Evaluation Metrics (Held-Out Split: 1,035 Messages)")
 st.write(
-    "All models were evaluated on the exact same stratified test set (904 legitimate Ham, 131 Spam). "
-    "TF-IDF feature extraction was fitted strictly on the 4,136 training messages to prevent data leakage."
+    "All three algorithms were evaluated on the identical stratified test set (904 legitimate Ham, 131 Spam). "
+    "TF-IDF feature extraction was fitted strictly on the 4,136 training messages to enforce **zero data leakage**."
 )
 
 disp_metrics = metrics_df.copy()
@@ -63,11 +112,13 @@ disp_metrics = disp_metrics.rename(
 
 st.dataframe(disp_metrics, use_container_width=True, hide_index=True)
 
+st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+
 # -----------------------------------------------------------------------------
-# 2. Confusion Matrices Side-by-Side (All Three Models)
+# 3. Confusion Matrices Side-by-Side (All Three Models)
 # -----------------------------------------------------------------------------
-st.markdown("### 🔲 Confusion Matrices (Actual vs. Predicted)")
-st.write("Visualizing the classification balance and operational error distribution across all 3 models:")
+st.markdown("### 🔲 Confusion Matrix Diagnostics (Actual vs. Predicted)")
+st.write("Visualizing false alarms (False Positives) versus spam slip-throughs (False Negatives):")
 
 cm_col1, cm_col2, cm_col3 = st.columns(3)
 metrics_dir = PROJECT_ROOT / "metrics"
@@ -77,59 +128,89 @@ with cm_col1:
     nb_cm_img = metrics_dir / "confusion_matrix_nb.png"
     if nb_cm_img.exists():
         st.image(str(nb_cm_img), use_container_width=True)
-    st.caption("**TN:** 903 | **FP (False Alarms):** 1 | **FN:** 33 | **TP:** 98")
+    st.markdown(
+        """
+        <div class="cyber-card" style="font-size: 0.82rem; color: #CBD5E1; padding: 10px 14px;">
+            <strong>TN:</strong> 903 &nbsp;|&nbsp; <strong>FP (False Alarms):</strong> 1 &nbsp;|&nbsp; <strong>FN:</strong> 33 &nbsp;|&nbsp; <strong>TP:</strong> 98
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 with cm_col2:
     st.markdown("##### 2. Logistic Regression")
     lr_cm_img = metrics_dir / "confusion_matrix_lr.png"
     if lr_cm_img.exists():
         st.image(str(lr_cm_img), use_container_width=True)
-    st.caption("**TN:** 901 | **FP (False Alarms):** 3 | **FN:** 35 | **TP:** 96")
+    st.markdown(
+        """
+        <div class="cyber-card" style="font-size: 0.82rem; color: #CBD5E1; padding: 10px 14px;">
+            <strong>TN:</strong> 901 &nbsp;|&nbsp; <strong>FP (False Alarms):</strong> 3 &nbsp;|&nbsp; <strong>FN:</strong> 35 &nbsp;|&nbsp; <strong>TP:</strong> 96
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 with cm_col3:
     st.markdown("##### 3. Linear SVM")
     svc_cm_img = metrics_dir / "confusion_matrix_svc.png"
     if svc_cm_img.exists():
         st.image(str(svc_cm_img), use_container_width=True)
-    st.caption("**TN:** 902 | **FP (False Alarms):** 2 | **FN:** 17 | **TP:** 114")
+    st.markdown(
+        """
+        <div class="cyber-card" style="font-size: 0.82rem; color: #CBD5E1; padding: 10px 14px;">
+            <strong>TN:</strong> 902 &nbsp;|&nbsp; <strong>FP (False Alarms):</strong> 2 &nbsp;|&nbsp; <strong>FN:</strong> 17 &nbsp;|&nbsp; <strong>TP:</strong> 114
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-# Operational insight callout
-st.info(
-    "🚨 **Critical Engineering Takeaway**: While **Naive Bayes** produced only **1 false alarm** across 904 legitimate messages, "
-    "**Linear SVM** caught **114 out of 131 spam messages** (Recall = 87.02%, compared to 74.81% for NB), reducing spam slip-throughs by almost half (17 vs. 33 missed)."
+st.markdown(
+    """
+    <div class="cyber-card" style="border-left: 3px solid #8B5CF6; margin-top: 10px;">
+        <span style="color: #A78BFA; font-weight: 700; font-size: 0.85rem; text-transform: uppercase;">
+            Operational Security Analysis
+        </span>
+        <div style="font-size: 0.88rem; color: #CBD5E1; margin-top: 4px; line-height: 1.5;">
+            <strong>Naive Bayes</strong> generates only <strong>1 false alarm</strong> across 904 legitimate messages (98.99% Precision).
+            However, <strong>Linear SVM</strong> cuts spam slip-throughs nearly in half (only 17 false negatives vs 33 for NB), achieving an <strong>87.02% recall</strong>.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 st.divider()
 
 # -----------------------------------------------------------------------------
-# 3. Diagnostic Curves: ROC & Precision-Recall Curves
+# 4. Diagnostic Curves: ROC & Precision-Recall Curves
 # -----------------------------------------------------------------------------
-st.markdown("### 📉 Diagnostic Threshold Curves")
+st.markdown("### 📉 Discrimination Curves: ROC & Precision-Recall")
 roc_col, pr_col = st.columns(2)
 
 with roc_col:
-    st.markdown("##### Receiver Operating Characteristic (ROC) Curves")
+    st.markdown("##### Receiver Operating Characteristic (ROC)")
     roc_img = metrics_dir / "roc_curves.png"
     if roc_img.exists():
         st.image(str(roc_img), use_container_width=True)
     st.caption("All three models demonstrate exceptional discriminative capability (AUC > 0.983).")
 
 with pr_col:
-    st.markdown("##### Precision-Recall Curves (Spam Class)")
+    st.markdown("##### Precision-Recall (Spam Minority Class)")
     pr_img = metrics_dir / "pr_curves.png"
     if pr_img.exists():
         st.image(str(pr_img), use_container_width=True)
-    st.caption("Precision-Recall curves highlight performance specifically on the minority positive class (Spam).")
+    st.caption("Precision-Recall curves emphasize performance on the imbalanced minority positive class (Spam).")
 
 st.divider()
 
 # -----------------------------------------------------------------------------
-# 4. 5-Fold Stratified Cross-Validation
+# 5. 5-Fold Stratified Cross-Validation
 # -----------------------------------------------------------------------------
-st.markdown("### 🔁 5-Fold Stratified Cross-Validation")
+st.markdown("### 🔁 5-Fold Stratified Cross-Validation Stability")
 st.write(
-    "Cross-validation confirms that the high test metrics are statistically robust "
-    "and not an artifact of a lucky single train/test split."
+    "Stratified 5-fold cross-validation proves that model performance is statistically resilient "
+    "and not dependent on an advantageous single train/test partition."
 )
 
 if cv_df is not None:
@@ -150,12 +231,11 @@ else:
 st.divider()
 
 # -----------------------------------------------------------------------------
-# 5. Experimental TF-IDF N-gram Configurations Comparison
+# 6. Experimental TF-IDF N-gram Configurations Comparison
 # -----------------------------------------------------------------------------
 st.markdown("### 🔬 TF-IDF Feature Representation Experiments")
 st.write(
-    "To understand feature representation impact, three distinct TF-IDF configurations were evaluated "
-    "across all models on the identical stratified test split:"
+    "Evaluating three distinct TF-IDF vocabulary structures across all models on the identical test split:"
 )
 
 if exp_df is not None:
@@ -165,14 +245,20 @@ if exp_df is not None:
 
     st.dataframe(exp_display, use_container_width=True, hide_index=True)
 
-    st.markdown("##### 📝 Experimental Findings & Discussion")
     st.markdown(
         """
-        - **Config A vs. Config B (Unigrams vs. Unigrams + Bigrams):** Adding bigrams (`ngram_range=(1,2)`) provides phrases like `'claim call'` and `'cash prize'`, resulting in a modest boost in Naive Bayes precision (reaching 100%) and Recall (76.34%).
-        - **Config B vs. Config C (Adding Trigrams with 10,000 features):** Expanding to trigrams and doubling vocabulary capacity to 10,000 features **degraded** Naive Bayes recall significantly (from 76.34% down to 67.94%).
-        - **Why did complexity reduce performance?** SMS messages are brief (~15 words). Trigrams occur very infrequently, introducing extreme sparsity without sufficient statistical support, leading to over-regularization and parameter dilution.
-        - **Conclusion:** More complex feature representations do not necessarily yield superior accuracy in short-text NLP tasks.
-        """
+        <div class="cyber-card" style="border-left: 3px solid #38BDF8; margin-top: 12px;">
+            <span style="color: #38BDF8; font-weight: 700; font-size: 0.85rem; text-transform: uppercase;">
+                Architectural Findings: Feature Capacity vs. Generalization
+            </span>
+            <div style="font-size: 0.86rem; color: #CBD5E1; margin-top: 6px; line-height: 1.5;">
+                • <strong>Config A vs. B (Unigrams vs. Unigrams + Bigrams):</strong> Incorporating bi-grams (<code>ngram_range=(1,2)</code>) boosted Naive Bayes precision to 100% and recall to 76.34% by capturing phrases like <em>'claim call'</em>.<br>
+                • <strong>Config B vs. C (Trigrams with 10k Vocab):</strong> Doubling vocabulary capacity to 10,000 features and adding tri-grams <strong>degraded</strong> Naive Bayes recall significantly (from 76.34% down to 67.94%).<br>
+                • <strong>Why did added complexity harm performance?</strong> Short SMS messages (~15 words) have sparse trigram occurrences. The huge feature space introduces severe sparsity, leading to parameter dilution.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 else:
     st.info("TF-IDF configuration experiment records not found.")
@@ -180,16 +266,15 @@ else:
 st.divider()
 
 # -----------------------------------------------------------------------------
-# 6. Historical Baseline Verification
+# 7. Historical Baseline Verification
 # -----------------------------------------------------------------------------
-with st.expander("🏛️ View Historical Baseline Verification"):
+with st.expander("🏛️ Historical Baseline Determinism Verification"):
     st.write(
-        "Below are the verified historical baseline metrics recorded during the original project version. "
-        "Notice that Naive Bayes and Logistic Regression results match the baseline perfectly, "
-        "confirming reproducible, deterministic evaluation."
+        "Historical baseline metrics recorded during initial development. "
+        "Notice that Naive Bayes and Logistic Regression results match the baseline precisely, "
+        "confirming deterministic evaluation."
     )
     if baseline_df is not None:
         st.dataframe(baseline_df, use_container_width=True, hide_index=True)
     else:
         st.write("Baseline CSV not found.")
-

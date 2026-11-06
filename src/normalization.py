@@ -325,3 +325,4 @@ def normalize_sms(text: str) -> Dict[str, Any]:
         "has_modifications": len(all_mods) > 0,
         "modification_count": len(all_mods),
     }
+

@@ -1,12 +1,12 @@
-# SMS SHIELD 3.0
+# SMS SHIELD 4.0
 
-> **Advanced NLP & Adversarial Robustness SMS Spam Defense Platform**  
-> *Production-Grade Natural Language Processing System Featuring Sub-Word Character N-Grams, Rule-Based SMS Normalization, and Adversarial Evasion Stress-Testing.*
+> **AI-Powered SMS Threat Detection & Intelligence Platform**  
+> *Enterprise-Grade Cybersecurity SaaS Experience Featuring Sub-Word Character N-Grams, Rule-Based SMS Normalization, Adversarial Evasion Stress-Testing, and Plotly Interactive Threat Telemetry.*
 
 ---
 
 ## Table of Contents
-1. [Project Overview (What's New in 3.0)](#1-project-overview-whats-new-in-30)
+1. [Project Overview (What's New in 4.0)](#1-project-overview-whats-new-in-40)
 2. [Problem Statement: The Adversarial Evasion Challenge](#2-problem-statement-the-adversarial-evasion-challenge)
 3. [Technology Stack](#3-technology-stack)
 4. [Dataset & Preprocessing Architecture](#4-dataset--preprocessing-architecture)
@@ -21,27 +21,29 @@
 
 ---
 
-## 1. Project Overview (What's New in 3.0)
+## 1. Project Overview (What's New in 4.0)
 
-**SMS Shield 3.0** upgrades the platform from standard word-level classification into a robust, evasion-resilient NLP architecture designed to detect **adversarially obfuscated spam messages**.
+**SMS Shield 4.0** transforms the application into an enterprise-grade cybersecurity threat detection platform with a modern SaaS aesthetic (inspired by Linear, Vercel, and modern threat intelligence consoles).
 
-### Key Additions in Version 3.0:
-1. **Sub-Word Character N-Gram Feature Extraction:**
-   - Implemented character n-grams (`analyzer='char_wb'`, range 2 to 5) capturing sub-word roots across typos, affixes, and delimiter injections.
-   - Built a **Hybrid Feature Union** combining Word TF-IDF (1,2) and Character TF-IDF (2,5).
-2. **Rule-Based SMS Normalization Suite:**
-   - Automatic reversal of leetspeak numbers (`FR33` $\to$ `FREE`, `B0NU5` $\to$ `BONUS`, `W1NNER` $\to$ `WINNER`).
-   - Symbol substitution normalization (`W!NNER` $\to$ `WINNER`, `C@SH` $\to$ `CASH`, `PR!ZE` $\to$ `PRIZE`).
-   - Elongation compression (`freeeee` $\to$ `free`, `cooooool` $\to$ `cool`, `hurryyyy` $\to$ `hurry`).
-   - SMS slang expansion (`u` $\to$ `you`, `ur` $\to$ `your`, `gr8` $\to$ `great`, `txt` $\to$ `text`, `b4` $\to$ `before`).
-   - Spaced-out and delimited word reassembly (`w i n n e r` $\to$ `winner`, `w*i*n*n*e*r` $\to$ `winner`).
-   - **Protection of Numeric Entities:** Guarantees phone numbers (`09061701461`), currencies (`£900`), and dates are never corrupted.
-3. **Controlled Adversarial Testing Suite:**
-   - Evaluates 7 attack vectors: character substitution, delimiter insertion, vowel dropping, letter repetition, whitespace padding, decorative punctuation, and composite attacks.
-   - Measures Accuracy, Spam Recall degradation, Robustness Percentage, and spam miss flips.
-4. **New Dedicated Dashboard Page (Page 6: Robustness Analysis):**
-   - Live interactive attack playground allowing users to perturb messages and view defense performance side-by-side.
-   - Normalization inspector logging every rule applied.
+### Key Upgrades in Version 4.0:
+1. **Cybersecurity SaaS Visual Architecture:**
+   - Deep midnight navy (`#0B1020`), elevated dark cards (`#151E33`, `#1B2740`), electric violet (`#8B5CF6`), high-tech cyan (`#38BDF8`), emerald safe (`#10B981`), and soft red threat alert (`#F87171`).
+   - Native dark mode enforcement via `.streamlit/config.toml` and centralized CSS design tokens in [`src/ui_theme.py`](file:///Users/arnavpotale/Code/nlp/src/ui_theme.py).
+   - Real-time animated pulsing status telemetry dots (`SYS_STATUS: ONLINE`).
+2. **Interactive Plotly Visualizations:**
+   - High-contrast interactive Plotly charts across the entire platform:
+     - Donut charts for dataset label imbalance and batch processing ratios.
+     - Dual-overlaid histograms with KDE-style distributions for character length profiling.
+     - Grouped comparative bar charts comparing Accuracy, Precision, Recall, F1-Score, and ROC-AUC.
+     - Interactive token-level TF-IDF influence bar charts for individual payloads.
+     - Subplot n-gram comparisons (unigrams, bigrams, trigrams).
+     - Global linear coefficient weight charts.
+3. **Executive Cyber Command Center (`app.py`):**
+   - 5 KPI metric cards with colored accent strokes.
+   - Quick Threat Scanner with pre-packaged presets and instant 3-model scan.
+   - Navigation matrix with modular cards and status chips.
+4. **Preserved Core ML & Adversarial Defense Architecture:**
+   - 100% preservation of all underlying models, zero data leakage guarantees, character n-gram feature spaces, and SMS normalization logic.
 
 ---
 
@@ -52,8 +54,8 @@ Standard NLP text classifiers rely on word tokenization. When spammers apply del
 - **Leetspeak Substitutions:** `"FR33"` or `"W!NNER"` become out-of-vocabulary (OOV) tokens, causing word-level models to drop below spam detection thresholds.
 - **Empirical Vulnerability:** In our tests, a simple spaced-out or leetspeak evasion dropped standard Logistic Regression spam recall from **73.28%** down to **48.09%**, allowing **35 out of 131 test spams to bypass the filter unnoticed**.
 
-**SMS Shield 3.0 solves this via a dual-defense strategy:**
-1. **Representation Defense:** Character-level TF-IDF matches sub-word n-grams regardless of token boundaries or leet letters.
+**SMS Shield 4.0 solves this via a dual-defense strategy:**
+1. **Representation Defense:** Character-level TF-IDF (`char_wb`, n-gram range 2 to 5) matches sub-word n-grams regardless of token boundaries or leet letters.
 2. **Preprocessing Defense:** SMS Normalization reassembles spaced words and reverses leetspeak before vectorization.
 
 ---
@@ -64,8 +66,9 @@ Standard NLP text classifiers rely on word tokenization. When spammers apply del
 - **Natural Language Processing:** NLTK 3.8+ (Tokenization, Porter Stemmer, Stopwords)
 - **Machine Learning & Feature Unions:** scikit-learn 1.3+ (`TfidfVectorizer`, `FeatureUnion`, `MultinomialNB`, `LogisticRegression`, `LinearSVC`, `CalibratedClassifierCV`)
 - **Data Manipulation:** pandas & NumPy
-- **Visual Analytics:** Matplotlib & Seaborn
-- **Dashboard Framework:** Streamlit (Multi-Page Architecture with 6 specialized pages)
+- **Interactive Visualizations:** Plotly 5.18+ (Interactive Dark Cybersecurity Theming)
+- **Static Visual Diagnostics:** Matplotlib & Seaborn
+- **Dashboard Framework:** Streamlit (Multi-Page SaaS Architecture with 6 specialized modules)
 - **Model Serialization:** Joblib
 
 ---
@@ -174,17 +177,22 @@ cd /Users/arnavpotale/Code/nlp
 source venv/bin/activate
 ```
 
-### 2. Run Automated Verification Suite (12 Checkpoints)
+### 2. Install Requirements
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Run Automated Verification Suite (12 Checkpoints)
 ```bash
 python test_system.py
 ```
 
-### 3. Retrain Models & Regenerate Artifacts
+### 4. Retrain Models & Regenerate Artifacts
 ```bash
 python src/train.py
 ```
 
-### 4. Launch the Streamlit Multi-Page Application
+### 5. Launch the Streamlit SaaS Multi-Page Application
 ```bash
 streamlit run app.py
 ```
@@ -194,12 +202,13 @@ Open your browser at `http://localhost:8501`.
 
 ## 10. Streamlit 6-Page Dashboard Tour
 
-- **📊 Page 1: Dashboard (`pages/1_Dashboard.py`):** High-level telemetry, class distributions, length curves, and comparative model summaries.
-- **🔍 Page 2: Message Analyzer (`pages/2_Message_Analyzer.py`):** 3-model live inference with consensus voting, probability bars, heuristic indicators, and token contributions.
-- **🔬 Page 3: NLP Analysis (`pages/3_NLP_Analysis.py`):** 7-stage interactive trace and comparative unigram, bigram, and trigram analytics.
-- **📈 Page 4: Model Evaluation (`pages/4_Model_Evaluation.py`):** Confusion matrices, ROC curves, PR curves, 5-fold CV, and n-gram capacity experiments.
-- **📁 Page 5: Bulk SMS Analysis (`pages/5_Bulk_Analysis.py`):** Batch CSV classification with filtering and one-click report exports.
-- **🛡️ Page 6: Robustness Analysis (`pages/6_Robustness_Analysis.py`):** Interactive adversarial attack playground, live defense matrix, sub-word character comparison charts, and SMS normalization inspector.
+- **🏠 Welcome Hub (`app.py`):** Executive Cyber Command Center with live telemetry, KPI cards, real-time single-message scanner, and interactive module cards.
+- **📊 Page 1: Dashboard (`pages/1_Dashboard.py`):** High-level telemetry, Plotly donut class distribution, dual character length histograms, and grouped model comparisons.
+- **🔍 Page 2: Message Analyzer (`pages/2_Message_Analyzer.py`):** 3-model live inference with consensus voting, individual model probability meters, heuristic indicator scan, and interactive Plotly token weight charts.
+- **🔬 Page 3: NLP Analysis (`pages/3_NLP_Analysis.py`):** Sequential 7-stage interactive pipeline trace, high-risk promotional keyword spotter, and dual interactive Plotly n-gram charts (unigram, bigram, trigram).
+- **📈 Page 4: Model Evaluation (`pages/4_Model_Evaluation.py`):** Model benchmark cards, side-by-side confusion matrices, ROC/PR diagnostic curves, 5-fold cross-validation, and TF-IDF capacity experiments.
+- **📁 Page 5: Bulk SMS Analysis (`pages/5_Bulk_Analysis.py`):** High-throughput batch CSV processing engine with Plotly distribution charts, multi-criteria filtering, and one-click downloadable audit reports.
+- **🛡️ Page 6: Robustness Analysis (`pages/6_Robustness_Analysis.py`):** Interactive adversarial attack playground testing 7 evasion vectors, 4-way live defense matrix, Plotly sub-word comparison charts, and SMS normalization inspector.
 
 ---
 

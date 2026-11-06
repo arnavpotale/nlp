@@ -331,3 +331,4 @@ def evaluate_adversarial_robustness(
             evaluate_setup(setup_name, m_name, clf, vec, is_normalized=is_norm)
 
     return pd.DataFrame(records)
+

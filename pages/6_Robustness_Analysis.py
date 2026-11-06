@@ -1,29 +1,47 @@
 """
-SMS Shield 3.0 - Page 6: Robustness Analysis & Adversarial Defense
+SMS Shield 4.0 - Page 6: Robustness & Adversarial Defense Lab
 Author: SMS Shield NLP Project
 
 Interactive adversarial attack playground, sub-word character TF-IDF evaluation,
-SMS text normalization inspector, and empirical robustness benchmarks.
+automated SMS normalization defense, and empirical adversarial benchmarks.
 """
 
 import sys
 from pathlib import Path
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
+import plotly.graph_objects as go
 import streamlit as st
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.ui_components import render_header, render_sidebar_status, get_predictor, get_evaluation_metrics
+from src.ui_components import (
+    render_header,
+    render_sidebar_status,
+    render_kpi_card,
+    get_predictor,
+    get_evaluation_metrics,
+)
+from src.ui_theme import (
+    CARD_BG,
+    BORDER_COLOR,
+    PRIMARY_VIOLET,
+    CYAN_ACCENT,
+    SUCCESS_GREEN,
+    DANGER_RED,
+    TEXT_PRIMARY,
+    TEXT_MUTED,
+    apply_plotly_theme,
+)
 from src.normalization import normalize_sms
 from src.adversarial import generate_adversarial_variant
 
-
-st.set_page_config(page_title="Robustness Analysis | SMS Shield 3.0", page_icon="🛡️", layout="wide")
-render_header("Page 6: Adversarial Robustness & Evasion Defense", "Stress-test classifiers against leetspeak, spacing, and obfuscation; inspect character n-grams and normalization defense.")
+st.set_page_config(page_title="Robustness Lab | SMS Shield 4.0", page_icon="🛡️", layout="wide")
+render_header(
+    "Adversarial Robustness Lab",
+    "Stress-test classifiers against leetspeak, spacing, and obfuscation; inspect character n-grams and normalization defense."
+)
 render_sidebar_status()
 
 # Load predictor and metrics
@@ -52,7 +70,7 @@ preset_spams = {
     "☕ Friendly Lunch (Ham Test)": "Hey! Are we still on for lunch at 1 PM today? Let me know if you want to invite Sarah too.",
 }
 
-st.markdown("##### 1. Select a Sample Message or Enter Custom Text:")
+st.markdown("##### 1. Select a Sample Payload or Enter Custom Text:")
 p_cols = st.columns(len(preset_spams))
 for idx, (label, text_val) in enumerate(preset_spams.items()):
     if p_cols[idx].button(label, use_container_width=True):
@@ -91,15 +109,17 @@ normalized_msg = norm_info["normalized_text"]
 st.write("")
 
 # Side-by-side message cards
-st.markdown("##### 2. Message Comparison (Original vs. Attacked vs. Normalized)")
+st.markdown("##### 2. Message Progression: Clean vs. Attacked vs. Defended")
 mc1, mc2, mc3 = st.columns(3)
 
 with mc1:
     st.markdown(
         f"""
-        <div class="cyber-card" style="border-left: 4px solid #2563eb;">
-            <strong style="color: #1e3a8a;">Original Clean Message</strong>
-            <p style="margin: 8px 0; font-family: monospace; font-size: 0.88rem; background: #f8fafc; padding: 10px; border-radius: 6px;">
+        <div class="cyber-card" style="border-left: 4px solid #38BDF8;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #38BDF8; text-transform: uppercase;">
+                Original Clean Payload
+            </div>
+            <p style="margin: 8px 0; font-family: monospace; font-size: 0.88rem; background: #0B1020; border: 1px solid #26334D; color: #F8FAFC; padding: 10px; border-radius: 6px;">
                 {raw_user_msg}
             </p>
         </div>
@@ -110,9 +130,11 @@ with mc1:
 with mc2:
     st.markdown(
         f"""
-        <div class="cyber-card" style="border-left: 4px solid #dc2626;">
-            <strong style="color: #991b1b;">Adversarially Perturbed (Attacked)</strong>
-            <p style="margin: 8px 0; font-family: monospace; font-size: 0.88rem; background: #fef2f2; padding: 10px; border-radius: 6px;">
+        <div class="cyber-card" style="border-left: 4px solid #F87171;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #F87171; text-transform: uppercase;">
+                Adversarially Perturbed (Attacked)
+            </div>
+            <p style="margin: 8px 0; font-family: monospace; font-size: 0.88rem; background: #0B1020; border: 1px solid #26334D; color: #FCA5A5; padding: 10px; border-radius: 6px;">
                 {perturbed_msg}
             </p>
         </div>
@@ -123,9 +145,11 @@ with mc2:
 with mc3:
     st.markdown(
         f"""
-        <div class="cyber-card" style="border-left: 4px solid #059669;">
-            <strong style="color: #065f46;">Pre-Normalized Recovery</strong>
-            <p style="margin: 8px 0; font-family: monospace; font-size: 0.88rem; background: #f0fdf4; padding: 10px; border-radius: 6px;">
+        <div class="cyber-card" style="border-left: 4px solid #10B981;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #34D399; text-transform: uppercase;">
+                Pre-Normalized Recovery
+            </div>
+            <p style="margin: 8px 0; font-family: monospace; font-size: 0.88rem; background: #0B1020; border: 1px solid #26334D; color: #6EE7B7; padding: 10px; border-radius: 6px;">
                 {normalized_msg}
             </p>
         </div>
@@ -163,9 +187,9 @@ for model_key, model_display in [
     adv_norm_p = res_adv_norm["models"][model_key]["prob_spam"]
 
     # Check evasion: original was SPAM, but attacked became HAM
-    word_status = "⚠️ EVADED (Spam -> Ham)" if (orig_lbl == "SPAM" and adv_word_lbl == "HAM") else ("✅ Defended" if adv_word_lbl == "SPAM" else "Legitimate Ham")
-    char_status = "⚠️ EVADED" if (orig_lbl == "SPAM" and adv_char_lbl == "HAM") else ("✅ Defended" if adv_char_lbl == "SPAM" else "Legitimate Ham")
-    norm_status = "⚠️ EVADED" if (orig_lbl == "SPAM" and adv_norm_lbl == "HAM") else ("✅ Defended" if adv_norm_lbl == "SPAM" else "Legitimate Ham")
+    word_status = "⚠️ EVADED (Spam -> Ham)" if (orig_lbl == "SPAM" and adv_word_lbl == "HAM") else ("🛡️ Defended" if adv_word_lbl == "SPAM" else "Legitimate Ham")
+    char_status = "⚠️ EVADED" if (orig_lbl == "SPAM" and adv_char_lbl == "HAM") else ("🛡️ Defended" if adv_char_lbl == "SPAM" else "Legitimate Ham")
+    norm_status = "⚠️ EVADED" if (orig_lbl == "SPAM" and adv_norm_lbl == "HAM") else ("🛡️ Defended" if adv_norm_lbl == "SPAM" else "Legitimate Ham")
 
     matrix_rows.append({
         "Model": model_display,
@@ -188,12 +212,34 @@ adv_char_cons = res_adv_char["consensus"]
 adv_norm_cons = res_adv_norm["consensus"]
 
 if orig_cons == "SPAM" and adv_word_cons == "HAM":
-    st.error(
-        f"🚨 **Successful Adversarial Evasion on Word Baseline!** The attack flipped consensus from **SPAM** down to **HAM**. "
-        f"However: Character-Level consensus held as **{adv_char_cons}**, and Normalization restored consensus to **{adv_norm_cons}**."
+    st.markdown(
+        f"""
+        <div class="verdict-banner-spam">
+            <div style="font-size: 0.95rem; font-weight: 700; color: #FCA5A5;">
+                🚨 Successful Adversarial Evasion on Word Baseline!
+            </div>
+            <div style="font-size: 0.88rem; color: #E2E8F0; margin-top: 4px;">
+                The attack flipped baseline word consensus from <strong>SPAM</strong> down to <strong>HAM</strong>.<br>
+                However: <strong>Character-Level consensus held firm as {adv_char_cons}</strong>, and <strong>Normalization restored consensus to {adv_norm_cons}</strong>.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 elif orig_cons == "SPAM" and adv_word_cons == "SPAM":
-    st.success("🛡️ **Defense Resilient!** The models resisted this perturbation and maintained unanimous SPAM classification.")
+    st.markdown(
+        """
+        <div class="verdict-banner-ham">
+            <div style="font-size: 0.95rem; font-weight: 700; color: #6EE7B7;">
+                🛡️ Defense Resilient Across All Models!
+            </div>
+            <div style="font-size: 0.88rem; color: #E2E8F0; margin-top: 4px;">
+                The classifiers resisted this perturbation and successfully maintained unanimous SPAM identification.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 st.divider()
 
@@ -207,7 +253,7 @@ st.write(
 )
 
 if char_word_df is not None:
-    c_tab1, c_tab2 = st.tabs(["📈 Comparative Metrics Table", "📊 Visualization Chart"])
+    c_tab1, c_tab2 = st.tabs(["📈 Comparative Metrics Table", "📊 Interactive Plotly Comparison"])
 
     with c_tab1:
         disp_cw = char_word_df.copy()
@@ -216,17 +262,45 @@ if char_word_df is not None:
         st.dataframe(disp_cw, use_container_width=True, hide_index=True)
 
     with c_tab2:
-        cw_img = PROJECT_ROOT / "metrics" / "char_word_comparison_bar.png"
-        if cw_img.exists():
-            st.image(str(cw_img), use_container_width=True)
+        # Grouped bar chart comparing F1-score and Recall across feature representations
+        fig_rep = go.Figure()
+        representations = char_word_df["Feature Space"].unique()
+        models = char_word_df["Classifier"].unique()
+        
+        for rep in representations:
+            subset = char_word_df[char_word_df["Feature Space"] == rep]
+            fig_rep.add_trace(
+                go.Bar(
+                    name=rep,
+                    x=subset["Classifier"],
+                    y=subset["Recall"] * 100,
+                    text=[f"{v*100:.1f}%" for v in subset["Recall"]],
+                    textposition="outside",
+                    hovertemplate="Setup: %{data.name}<br>Classifier: %{x}<br>Recall: %{y:.2f}%<extra></extra>"
+                )
+            )
 
-    st.markdown("##### 💡 Technical Insights on Sub-Word Character N-Grams:")
+        apply_plotly_theme(fig_rep, height=360, title="Spam Recall Across Feature Representations (%)")
+        fig_rep.update_layout(
+            barmode="group",
+            yaxis=dict(range=[0, 115], title="Spam Recall (%)"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_rep, use_container_width=True)
+
     st.markdown(
         """
-        - **Why Character N-Grams Excel:** Character n-grams (`char_wb`, range 2 to 5) capture sub-word fragments (e.g. `'call'`, `'free'`, `'clai'`, `'ize'`) regardless of token boundaries, typos, or leetspeak substitutions.
-        - **Linear SVM with Char TF-IDF:** Achieved **99.13% Accuracy**, **100% Precision**, and **93.13% Recall** on the clean test split, outperforming word-level TF-IDF across all metrics.
-        - **Combined Word + Char:** Delivers near-identical peak recall (90.84%) and precision (100%), offering a hybrid representation.
-        """
+        <div class="cyber-card" style="border-left: 3px solid #34D399; margin-top: 10px;">
+            <span style="color: #34D399; font-weight: 700; font-size: 0.85rem; text-transform: uppercase;">
+                Why Character N-Grams Excel Against Obfuscation
+            </span>
+            <div style="font-size: 0.86rem; color: #CBD5E1; margin-top: 6px; line-height: 1.5;">
+                • <strong>Sub-Word Invariance:</strong> Character n-grams (<code>char_wb</code>, n-gram range 2 to 5) capture internal morphs like <em>'call'</em>, <em>'free'</em>, <em>'clai'</em>, and <em>'ize'</em> regardless of punctuation or leetspeak.<br>
+                • <strong>Linear SVM with Char TF-IDF:</strong> Reached <strong>99.13% Accuracy</strong>, <strong>100% Precision</strong>, and <strong>93.13% Recall</strong> on the clean split, outperforming word-level TF-IDF across all dimensions.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 else:
     st.info("Feature space comparison table not found. Please run `python src/train.py`.")
@@ -239,7 +313,7 @@ st.divider()
 st.markdown("### 🧪 Controlled Adversarial Robustness Benchmarks")
 st.write(
     "Evaluated across the held-out test split under a **Composite Multi-Vector Attack** "
-    "(reproducible random seed = 42). Measures accuracy drop, spam recall drop, robustness score, and spam miss flips:"
+    "(reproducible random seed = 42). Measures accuracy drop, spam recall collapse, robustness score, and evasion flips:"
 )
 
 if adv_df is not None:
@@ -261,10 +335,19 @@ if adv_df is not None:
     if adv_img.exists():
         st.image(str(adv_img), use_container_width=True)
 
-    st.warning(
-        "📌 **Empirical Benchmark Takeaway**: On the baseline word-level pipeline, Logistic Regression recall collapsed from **73.28%** "
-        "down to **48.09%** (a 25.19% drop; 35 spam messages slipped through!). "
-        "In contrast, **Character TF-IDF maintained an 83.97% recall** (drop of only 0.76%), and **Pre-Normalization restored recall to 67.18%**."
+    st.markdown(
+        """
+        <div class="cyber-card" style="border-left: 3px solid #F87171; margin-top: 12px;">
+            <span style="color: #F87171; font-weight: 700; font-size: 0.85rem; text-transform: uppercase;">
+                Empirical Benchmark Findings
+            </span>
+            <div style="font-size: 0.86rem; color: #CBD5E1; margin-top: 6px; line-height: 1.5;">
+                • On baseline Word TF-IDF, Logistic Regression recall collapsed from <strong>73.28%</strong> down to <strong>48.09%</strong> (a 25.19% plunge; 35 spam messages slipped through!).<br>
+                • In contrast, <strong>Character TF-IDF maintained an 83.97% recall</strong> (drop of only 0.76%), and <strong>SMS Normalization restored recall to 67.18%</strong>.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 else:
     st.info("Adversarial benchmark table not found. Please run `python src/train.py`.")
@@ -282,7 +365,19 @@ test_norm_input = st.text_input("Enter text to inspect normalization:", value=no
 
 if test_norm_input.strip():
     inspect_res = normalize_sms(test_norm_input)
-    st.markdown(f"**Normalized Output:**\n`{inspect_res['normalized_text']}`")
+    st.markdown(
+        f"""
+        <div class="cyber-card" style="margin-top: 8px;">
+            <div style="font-size: 0.76rem; font-weight: 700; color: #34D399; text-transform: uppercase;">
+                Recovered Normalized Text
+            </div>
+            <p style="margin: 6px 0; font-family: monospace; font-size: 0.95rem; color: #6EE7B7; background: #0B1020; border: 1px solid #26334D; padding: 10px; border-radius: 6px;">
+                {inspect_res['normalized_text']}
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     if inspect_res["modifications"]:
         st.markdown(f"**Modifications Applied ({inspect_res['modification_count']}):**")
