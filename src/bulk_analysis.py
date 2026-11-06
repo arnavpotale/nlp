@@ -167,3 +167,4 @@ def generate_sample_bulk_csv(save_path: Optional[Path] = None) -> pd.DataFrame:
         df.to_csv(save_path, index=False)
 
     return df
+

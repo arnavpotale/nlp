@@ -281,3 +281,4 @@ def get_global_top_features(vectorizer, model, top_n: int = 15) -> Tuple[pd.Data
     })
 
     return spam_df, ham_df
+

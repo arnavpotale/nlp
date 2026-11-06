@@ -154,3 +154,4 @@ with c_table:
         "minimizing false alarms. **Linear SVM** delivers the highest recall (87.02%) and overall F1-score (92.31%), "
         "making them complementary algorithms for a multi-model consensus system."
     )
+

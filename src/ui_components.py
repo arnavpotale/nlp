@@ -1,5 +1,5 @@
 """
-SMS Shield 2.0 - Shared UI Components & Cybersecurity Styling Module
+SMS Shield 3.0 - Shared UI Components & Cybersecurity Styling Module
 Author: SMS Shield NLP Project
 
 Provides consistent visual identity, custom CSS styling, navigation headers,
@@ -22,7 +22,6 @@ def inject_custom_css():
     st.markdown(
         """
         <style>
-            /* Base layout & typography */
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
             
             html, body, [class*="css"] {
@@ -31,20 +30,20 @@ def inject_custom_css():
             
             /* Professional Header Banner */
             .shield-header {
-                background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e3a8a 100%);
+                background: linear-gradient(135deg, #0b0f19 0%, #1e1b4b 45%, #1e3a8a 100%);
                 border: 1px solid #312e81;
                 border-radius: 14px;
                 padding: 24px 28px;
                 color: #ffffff;
                 margin-bottom: 24px;
-                box-shadow: 0 4px 20px rgba(15, 23, 42, 0.15);
+                box-shadow: 0 4px 20px rgba(11, 15, 25, 0.2);
             }
             .shield-title {
-                font-size: 2.1rem;
+                font-size: 2.15rem;
                 font-weight: 800;
                 letter-spacing: -0.5px;
                 margin: 0;
-                background: linear-gradient(90deg, #60a5fa, #a78bfa, #c084fc);
+                background: linear-gradient(90deg, #60a5fa, #a78bfa, #f43f5e);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 display: flex;
@@ -137,17 +136,17 @@ def render_header(page_title: str, page_description: str):
         f"""
         <div class="shield-header">
             <div class="shield-title">
-                🛡️ SMS SHIELD 2.0
+                🛡️ SMS SHIELD 3.0
             </div>
             <div class="shield-subtitle">
-                Intelligent SMS Spam Detection & NLP Analytics Platform
+                Advanced NLP & Adversarial Robustness SMS Spam Defense Platform
             </div>
             <div class="shield-badges">
-                <span class="shield-badge">Three-Model Consensus</span>
-                <span class="shield-badge">Explainable NLP</span>
+                <span class="shield-badge">Word & Character TF-IDF</span>
+                <span class="shield-badge">SMS Normalization Defense</span>
+                <span class="shield-badge">Adversarial Stress-Testing</span>
                 <span class="shield-badge">Zero Data Leakage</span>
-                <span class="shield-badge">Local Execution</span>
-                <span class="shield-badge" style="background: rgba(99, 102, 241, 0.3); border-color: #818cf8; color: #e0e7ff;">{page_title}</span>
+                <span class="shield-badge" style="background: rgba(244, 63, 94, 0.25); border-color: #f43f5e; color: #ffe4e6;">{page_title}</span>
             </div>
         </div>
         """,
@@ -164,12 +163,11 @@ def render_sidebar_status():
         st.markdown("### 🛡️ System Monitor")
         models_exist = (
             (MODELS_DIR / "tfidf_vectorizer.joblib").exists() and
-            (MODELS_DIR / "multinomial_nb.joblib").exists() and
-            (MODELS_DIR / "logistic_regression.joblib").exists() and
+            (MODELS_DIR / "char_tfidf_vectorizer.joblib").exists() and
             (MODELS_DIR / "linear_svc.joblib").exists()
         )
         if models_exist:
-            st.success("🟢 **Models Active**: 3/3 Loaded\n- Multinomial Naive Bayes\n- Logistic Regression\n- Linear SVM")
+            st.success("🟢 **Models Active**: Word & Character TF-IDF\n- Naive Bayes\n- Logistic Regression\n- Linear SVM")
         else:
             st.warning("⚠️ **Models Incomplete**: Run Training")
 
@@ -182,6 +180,7 @@ def render_sidebar_status():
             3. **🔬 NLP Analysis**: Step-by-Step Transformations & N-Grams
             4. **📈 Model Evaluation**: ROC, PR Curves & Experiments
             5. **📁 Bulk SMS Analysis**: Batch CSV Inference & Reports
+            6. **🛡️ Robustness Analysis**: Adversarial Stress-Testing & Normalization
             """
         )
         st.markdown("---")
@@ -198,7 +197,7 @@ def render_sidebar_status():
                 except Exception as ex:
                     st.error(f"Retraining failed: {ex}")
 
-        st.caption("SMS Shield 2.0 • Academic NLP Mini-Project")
+        st.caption("SMS Shield 3.0 • Advanced NLP & Adversarial Defense")
 
 
 # -----------------------------------------------------------------------------
@@ -241,6 +240,8 @@ def get_evaluation_metrics() -> Dict[str, Any]:
     cv_csv = METRICS_DIR / "cross_val_metrics.csv"
     exp_csv = METRICS_DIR / "tfidf_experiments.csv"
     baseline_csv = METRICS_DIR / "baseline_metrics.csv"
+    char_word_csv = METRICS_DIR / "char_word_comparison.csv"
+    adv_csv = METRICS_DIR / "adversarial_evaluation.csv"
 
     if not eval_csv.exists():
         raise FileNotFoundError(f"Missing evaluation metrics at {eval_csv.resolve()}. Run `python src/train.py`.")
@@ -250,4 +251,6 @@ def get_evaluation_metrics() -> Dict[str, Any]:
         "cv_df": pd.read_csv(cv_csv) if cv_csv.exists() else None,
         "experiments_df": pd.read_csv(exp_csv) if exp_csv.exists() else None,
         "baseline_df": pd.read_csv(baseline_csv) if baseline_csv.exists() else None,
+        "char_word_df": pd.read_csv(char_word_csv) if char_word_csv.exists() else None,
+        "adv_df": pd.read_csv(adv_csv) if adv_csv.exists() else None,
     }

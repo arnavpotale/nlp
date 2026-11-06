@@ -257,3 +257,4 @@ try:
         st.dataframe(ham_lr_feats, use_container_width=True, hide_index=True)
 except Exception as ex:
     st.info(f"Feature coefficients could not be rendered: {ex}")
+

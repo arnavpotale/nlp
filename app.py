@@ -30,7 +30,7 @@ from src.ui_components import (
 )
 
 inject_custom_css()
-render_header("Welcome Hub & Platform Overview", "Production-grade NLP pipeline & three-model consensus classification platform.")
+render_header("Welcome Hub & Platform Overview", "Production-grade NLP pipeline, three-model consensus, character n-grams, and adversarial robustness defense.")
 render_sidebar_status()
 
 # Load cached system resources
@@ -163,10 +163,11 @@ with nav_col2:
                 interactive filtering, and one-click downloadable classification reports.
             </p>
         </div>
-        <div class="cyber-card" style="background: #f8fafc; border-style: dashed;">
-            <h4 style="margin: 0 0 6px 0; color: #334155;">🛡️ Technical Architecture Highlights</h4>
-            <p style="margin: 0; color: #64748b; font-size: 0.88rem;">
-                100% locally executable • Zero data leakage • Fully reproducible • NLTK & scikit-learn.
+        <div class="cyber-card" style="border-left: 4px solid #f43f5e;">
+            <h4 style="margin: 0 0 6px 0; color: #9f1239;">🛡️ 6. Robustness & Adversarial Defense</h4>
+            <p style="margin: 0; color: #475569; font-size: 0.92rem;">
+                Adversarial attack playground (leetspeak, spacing, delimiters), character-level
+                TF-IDF evaluation, SMS text normalization inspector, and empirical robustness benchmarks.
             </p>
         </div>
         """,
