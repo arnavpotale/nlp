@@ -1,21 +1,24 @@
 """
-SMS Shield 4.0 — AI-Powered SMS Threat Detection & Intelligence Platform
-Main Application Entrypoint & Executive Cyber Command Center
+SMS Shield 4.0 — Overview & Quick Detection Hub
+Author: SMS Shield NLP Project
+
+Clean, minimalist landing page providing high-level system telemetry,
+an interactive single-message inference scanner, and navigation to all six modules.
 """
 
 import sys
 from pathlib import Path
 import streamlit as st
 
-# Configure page layout and visual identity
+# Configure page layout
 st.set_page_config(
-    page_title="SMS Shield 4.0 | Threat Intelligence Platform",
+    page_title="SMS Shield | Overview",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Project paths
+# Project root path
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -29,29 +32,28 @@ from src.ui_components import (
     get_predictor,
     get_evaluation_metrics,
 )
-from src.ui_theme import PRIMARY_VIOLET, CYAN_ACCENT, SUCCESS_GREEN, DANGER_RED
+from src.ui_theme import PRIMARY_ACCENT, SECONDARY_ACCENT, SUCCESS_GREEN, DANGER_RED
 
-# Instate cyber styling and persistent status
 inject_custom_css()
 render_header(
-    "Executive Cyber Portal",
-    "Enterprise-grade NLP SMS threat detection ensemble with character n-grams and adversarial evasion defense."
+    "SMS Shield",
+    "NLP-based SMS spam classification and adversarial robustness intelligence platform."
 )
 render_sidebar_status()
 
-# Load cached system resources
+# Load cached dataset and models
 try:
     raw_df, clean_df, dup_count = get_dataset()
     predictor = get_predictor()
     eval_data = get_evaluation_metrics()
     metrics_df = eval_data["metrics_df"]
 except Exception as ex:
-    st.error(f"Error initializing system resources: {ex}")
-    st.info("Please verify the dataset exists in data/SMSSpamCollection and run `python src/train.py`.")
+    st.error(f"Error loading system resources: {ex}")
+    st.info("Please verify data/SMSSpamCollection exists and run `python src/train.py`.")
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 1. Executive Telemetry Row (5 KPI Cards)
+# 1. System Telemetry KPI Cards
 # -----------------------------------------------------------------------------
 total_clean = len(clean_df)
 spam_count = int((clean_df["label"] == "spam").sum())
@@ -61,52 +63,41 @@ best_f1_idx = metrics_df["F1-Score"].idxmax()
 best_f1_model = metrics_df.loc[best_f1_idx, "Model"]
 best_f1_val = metrics_df["F1-Score"].max()
 
-q1, q2, q3, q4, q5 = st.columns(5)
-render_kpi_card(q1, "Clean Repository", f"{total_clean:,}", f"{dup_count:,} duplicates filtered", accent_border=PRIMARY_VIOLET)
-render_kpi_card(q2, "Threat Ratio (Spam)", f"{spam_pct:.1f}%", f"{spam_count:,} spam messages", accent_border=DANGER_RED)
-render_kpi_card(q3, "Clean Baseline (Ham)", f"{100-spam_pct:.1f}%", f"{ham_count:,} verified ham", accent_border=SUCCESS_GREEN)
-render_kpi_card(q4, "Active Classifiers", "3 Models", "NB, LogReg, Linear SVM", accent_border=CYAN_ACCENT)
-render_kpi_card(q5, "Peak Defense F1", f"{best_f1_val:.2%}", best_f1_model, accent_border="#EC4899")
+c1, c2, c3, c4 = st.columns(4)
+render_kpi_card(c1, "Total Messages", f"{total_clean:,}", f"{dup_count:,} duplicates dropped")
+render_kpi_card(c2, "Spam Ratio", f"{spam_pct:.1f}%", f"{spam_count:,} spam messages")
+render_kpi_card(c3, "Ham Ratio", f"{100-spam_pct:.1f}%", f"{ham_count:,} legitimate messages")
+render_kpi_card(c4, "Peak F1-Score", f"{best_f1_val:.2%}", best_f1_model)
 
 st.write("")
 
 # -----------------------------------------------------------------------------
-# 2. Live Threat Scanner Console
+# 2. Quick Detection Scanner
 # -----------------------------------------------------------------------------
-st.markdown(
-    """
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-        <h3 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #F8FAFC;">
-            ⚡ Live Threat Scanner Console
-        </h3>
-        <span class="status-pill active">
-            Real-Time Inference Engine
-        </span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("#### Quick Message Analysis")
+st.caption("Select a sample message or enter your own to evaluate predictions across all three classifiers.")
 
-preset_cols = st.columns(4)
 demo_presets = [
-    ("🎁 Lottery Scam", "WINNER!! As a valued customer you have won a £1,000 cash prize reward! Call 09061701461 to claim. Valid 12 hours."),
-    ("🏦 Bank Phish", "URGENT! Your debit card has been suspended due to suspicious activity. Visit https://secure-bank-verify.com to re-activate."),
-    ("☕ Team Lunch", "Hey! Are we still on for lunch at 1 PM today? Let me know if you want to invite Sarah too."),
-    ("📅 Project Sync", "Ok sounds good, I'll review the pull request and update the documentation before our sync at 3 PM."),
+    ("Lottery Scam", "WINNER!! As a valued customer you have won a £1,000 cash prize reward! Call 09061701461 to claim. Valid 12 hours."),
+    ("Bank Phish", "URGENT! Your debit card has been suspended due to suspicious activity. Visit https://secure-bank-verify.com to re-activate."),
+    ("Team Lunch", "Hey! Are we still on for lunch at 1 PM today? Let me know if you want to invite Sarah too."),
+    ("Project Sync", "Ok sounds good, I will review the pull request and update the documentation before our sync at 3 PM."),
 ]
 
+preset_cols = st.columns(4)
 for idx, (btn_label, msg_text) in enumerate(demo_presets):
     if preset_cols[idx].button(btn_label, use_container_width=True):
-        st.session_state["portal_scanner_input"] = msg_text
+        st.session_state["overview_scanner_input"] = msg_text
 
-default_scanner_val = st.session_state.get(
-    "portal_scanner_input",
+default_input_val = st.session_state.get(
+    "overview_scanner_input",
     "WINNER!! You have won a £1,000 cash prize! Text CLAIM to 88088 now to collect your reward."
 )
 
 quick_input = st.text_input(
-    "Enter an SMS message to test instantaneous consensus classification:",
-    value=default_scanner_val
+    "Message text:",
+    value=default_input_val,
+    label_visibility="collapsed"
 )
 
 if quick_input.strip():
@@ -115,55 +106,56 @@ if quick_input.strip():
         models_data = pred_res["models"]
         is_spam_consensus = (pred_res["consensus"] == "SPAM")
 
-        # Animated Verdict Banner
-        banner_class = "verdict-banner-spam" if is_spam_consensus else "verdict-banner-ham"
-        banner_color = DANGER_RED if is_spam_consensus else SUCCESS_GREEN
-        banner_icon = "🚨" if is_spam_consensus else "🟢"
-        banner_title = "CRITICAL THREAT DETECTED: SPAM" if is_spam_consensus else "VERIFIED SECURE: LEGITIMATE HAM"
+        box_class = "verdict-box-spam" if is_spam_consensus else "verdict-box-ham"
+        pill_class = "saas-pill-spam" if is_spam_consensus else "saas-pill-ham"
+        verdict_title = "Spam Detected" if is_spam_consensus else "Legitimate Message (Ham)"
+        detail_text = (
+            f"{pred_res['consensus_detail']} • {pred_res['spam_votes']} of 3 models flagged as spam"
+            if is_spam_consensus
+            else f"{pred_res['consensus_detail']} • {pred_res['ham_votes']} of 3 models verified as legitimate"
+        )
 
         st.markdown(
             f"""
-            <div class="{banner_class}">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div class="{box_class}">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <div>
-                        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: {banner_color};">
-                            Three-Model Ensemble Consensus
+                        <div style="font-size: 0.76rem; font-weight: 600; text-transform: uppercase; color: {'#F87171' if is_spam_consensus else '#34D399'}; letter-spacing: 0.04em;">
+                            Consensus Result
                         </div>
-                        <div style="font-size: 1.45rem; font-weight: 800; color: #FFFFFF; margin-top: 4px;">
-                            {banner_icon} {banner_title}
+                        <div style="font-size: 1.25rem; font-weight: 600; color: #F1F5F9; margin-top: 2px;">
+                            {verdict_title}
                         </div>
-                        <div style="font-size: 0.88rem; color: #E2E8F0; margin-top: 2px;">
-                            Consensus Agreement: <strong>{pred_res['consensus_detail']}</strong> (Spam Votes: {pred_res['spam_votes']}/3)
+                        <div style="font-size: 0.85rem; color: #9CA3AF; margin-top: 4px;">
+                            {detail_text}
                         </div>
                     </div>
-                    <div>
-                        <span class="status-pill {'threat' if is_spam_consensus else 'success'}" style="font-size: 0.85rem; padding: 6px 14px;">
-                            {pred_res['consensus']}
-                        </span>
-                    </div>
+                    <span class="saas-pill {pill_class}">
+                        {pred_res['consensus']}
+                    </span>
                 </div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-        # 3 Model Telemetry Cards
+        # 3 Model Breakdown Cards
         qc1, qc2, qc3 = st.columns(3)
 
-        def render_portal_model_box(col, m_data, accent_color):
+        def render_compact_model_card(col, m_data):
             with col:
                 is_m_spam = (m_data["pred"] == 1)
                 st.markdown(
                     f"""
-                    <div class="cyber-card" style="border-left: 4px solid {accent_color}; margin-bottom: 8px;">
+                    <div class="saas-card" style="padding: 14px 16px; margin-bottom: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC;">{m_data['name']}</span>
-                            <span style="font-size: 0.78rem; font-weight: 700; color: {'#F87171' if is_m_spam else '#34D399'};">
-                                {'🚨 SPAM' if is_m_spam else '🟢 HAM'}
+                            <span style="font-size: 0.9rem; font-weight: 600; color: #F1F5F9;">{m_data['name']}</span>
+                            <span class="saas-pill {'saas-pill-spam' if is_m_spam else 'saas-pill-ham'}" style="font-size: 0.7rem; padding: 2px 6px;">
+                                {'Spam' if is_m_spam else 'Ham'}
                             </span>
                         </div>
-                        <div style="margin-top: 8px; font-size: 0.82rem; color: #94A3B8;">
-                            Spam Probability: <strong style="color: {'#F87171' if is_m_spam else '#F8FAFC'};">{m_data['prob_spam']:.2%}</strong>
+                        <div style="margin-top: 10px; font-size: 0.8rem; color: #9CA3AF;">
+                            Spam probability: <strong style="color: #F1F5F9;">{m_data['prob_spam']:.1%}</strong>
                         </div>
                     </div>
                     """,
@@ -171,104 +163,81 @@ if quick_input.strip():
                 )
                 st.progress(float(m_data["prob_spam"]))
 
-        render_portal_model_box(qc1, models_data["naive_bayes"], PRIMARY_VIOLET)
-        render_portal_model_box(qc2, models_data["logistic_regression"], CYAN_ACCENT)
-        render_portal_model_box(qc3, models_data["linear_svm"], SUCCESS_GREEN)
+        render_compact_model_card(qc1, models_data["naive_bayes"])
+        render_compact_model_card(qc2, models_data["logistic_regression"])
+        render_compact_model_card(qc3, models_data["linear_svm"])
 
-st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top: 32px;'></div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 3. Platform Module Directory Cards
+# 3. Application Modules Navigation
 # -----------------------------------------------------------------------------
-st.markdown(
-    """
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-        <h3 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #F8FAFC;">
-            🧭 Platform Intelligence Modules
-        </h3>
-        <span style="font-size: 0.85rem; color: #94A3B8;">
-            Select a module from the sidebar navigation
-        </span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("#### Application Modules")
+st.caption("Explore detailed analytics, linguistic explainability, model diagnostics, and robustness testing.")
 
-nav_col1, nav_col2 = st.columns(2)
+m_col1, m_col2 = st.columns(2)
 
-with nav_col1:
+with m_col1:
     st.markdown(
         """
-        <div class="cyber-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="margin: 0; color: #38BDF8; font-size: 1.1rem;">📊 1. Global System Dashboard</h4>
-                <span class="status-pill">Telemetry</span>
+        <div class="saas-card">
+            <div style="font-size: 0.95rem; font-weight: 600; color: #F1F5F9;">
+                📊 1. Global Dashboard
             </div>
-            <p style="margin: 8px 0 0 0; color: #94A3B8; font-size: 0.9rem; line-height: 1.5;">
-                Executive visual analytics of dataset distributions, class imbalance, message character length curves,
-                and high-level model comparison benchmarks across Naive Bayes, Logistic Regression, and Linear SVM.
-            </p>
+            <div style="font-size: 0.85rem; color: #9CA3AF; margin-top: 4px; line-height: 1.45;">
+                Dataset distribution, class imbalance, message character length curves, and comparative model metrics.
+            </div>
         </div>
 
-        <div class="cyber-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="margin: 0; color: #8B5CF6; font-size: 1.1rem;">🔍 2. Interactive Message Analyzer</h4>
-                <span class="status-pill active">Inference</span>
+        <div class="saas-card">
+            <div style="font-size: 0.95rem; font-weight: 600; color: #F1F5F9;">
+                🔍 2. Message Analyzer
             </div>
-            <p style="margin: 8px 0 0 0; color: #94A3B8; font-size: 0.9rem; line-height: 1.5;">
-                Real-time threat inspection workspace with 3-model consensus voting, raw output probabilities,
-                heuristic threat indicators (URLs, shortcodes, urgency), and token-level TF-IDF explainability.
-            </p>
+            <div style="font-size: 0.85rem; color: #9CA3AF; margin-top: 4px; line-height: 1.45;">
+                Real-time classification with consensus voting, individual model probabilities, heuristic signals, and token influence.
+            </div>
         </div>
 
-        <div class="cyber-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="margin: 0; color: #34D399; font-size: 1.1rem;">🔬 3. NLP Intelligence & N-Grams</h4>
-                <span class="status-pill">Linguistics</span>
+        <div class="saas-card">
+            <div style="font-size: 0.95rem; font-weight: 600; color: #F1F5F9;">
+                🔬 3. NLP Analysis
             </div>
-            <p style="margin: 8px 0 0 0; color: #94A3B8; font-size: 0.9rem; line-height: 1.5;">
-                Interactive educational trace through all 7 pipeline stages, suspicious promotional term forensics,
-                and comparative unigram, bigram, and trigram dataset distributions.
-            </p>
+            <div style="font-size: 0.85rem; color: #9CA3AF; margin-top: 4px; line-height: 1.45;">
+                Step-by-step 7-stage NLP pipeline trace, suspicious keyword spotter, and dataset-wide n-gram distributions.
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-with nav_col2:
+with m_col2:
     st.markdown(
         """
-        <div class="cyber-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="margin: 0; color: #F59E0B; font-size: 1.1rem;">📈 4. Model Evaluation & ROC/PR Lab</h4>
-                <span class="status-pill">Evaluation</span>
+        <div class="saas-card">
+            <div style="font-size: 0.95rem; font-weight: 600; color: #F1F5F9;">
+                📈 4. Model Evaluation
             </div>
-            <p style="margin: 8px 0 0 0; color: #94A3B8; font-size: 0.9rem; line-height: 1.5;">
-                Rigorous statistical assessment on the held-out test split (1,035 messages) with side-by-side
-                Confusion Matrices, ROC curves, Precision-Recall curves, 5-Fold Cross-Validation, and n-gram experiments.
-            </p>
+            <div style="font-size: 0.85rem; color: #9CA3AF; margin-top: 4px; line-height: 1.45;">
+                Held-out test split evaluation (n=1,035), confusion matrices, ROC/PR curves, and 5-fold cross-validation.
+            </div>
         </div>
 
-        <div class="cyber-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="margin: 0; color: #EC4899; font-size: 1.1rem;">📁 5. Bulk SMS Analysis & Reports</h4>
-                <span class="status-pill">Batch Scans</span>
+        <div class="saas-card">
+            <div style="font-size: 0.95rem; font-weight: 600; color: #F1F5F9;">
+                📁 5. Bulk Analysis
             </div>
-            <p style="margin: 8px 0 0 0; color: #94A3B8; font-size: 0.9rem; line-height: 1.5;">
-                High-throughput batch CSV processing engine with intelligent column mapping, consensus voting,
-                interactive multi-criteria filtering, and one-click downloadable audit reports.
-            </p>
+            <div style="font-size: 0.85rem; color: #9CA3AF; margin-top: 4px; line-height: 1.45;">
+                Batch CSV processing, column mapping, consensus statistics, multi-criteria filtering, and report downloads.
+            </div>
         </div>
 
-        <div class="cyber-card" style="border-left: 4px solid #F87171;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="margin: 0; color: #F87171; font-size: 1.1rem;">🛡️ 6. Robustness & Adversarial Defense</h4>
-                <span class="status-pill threat">Defense Lab</span>
+        <div class="saas-card">
+            <div style="font-size: 0.95rem; font-weight: 600; color: #F1F5F9;">
+                🛡️ 6. Robustness Lab
             </div>
-            <p style="margin: 8px 0 0 0; color: #94A3B8; font-size: 0.9rem; line-height: 1.5;">
-                Adversarial attack playground testing 7 evasion vectors (leetspeak, spacing, delimiters),
-                sub-word character TF-IDF evaluation, and automated rule-based SMS normalization recovery.
-            </p>
+            <div style="font-size: 0.85rem; color: #9CA3AF; margin-top: 4px; line-height: 1.45;">
+                Adversarial attack playground, sub-word character TF-IDF evaluation, and automated SMS normalization recovery.
+            </div>
         </div>
         """,
         unsafe_allow_html=True

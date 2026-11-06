@@ -2,19 +2,16 @@
 SMS Shield 4.0 - Page 1: Dashboard
 Author: SMS Shield NLP Project
 
-Executive Threat Intelligence Overview: Dataset distributions, class imbalance,
-interactive length histograms, and 3-model comparative performance benchmarks.
+Clean, minimalist dashboard displaying dataset distributions, class imbalance,
+message length profiling, and quantitative model performance benchmarks.
 """
 
 import sys
 from pathlib import Path
-import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-# Configure path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -29,37 +26,36 @@ from src.ui_components import (
 from src.ui_theme import (
     CARD_BG,
     BORDER_COLOR,
-    PRIMARY_VIOLET,
-    CYAN_ACCENT,
+    PRIMARY_ACCENT,
+    SECONDARY_ACCENT,
     SUCCESS_GREEN,
     DANGER_RED,
     TEXT_PRIMARY,
-    TEXT_MUTED,
+    TEXT_SECONDARY,
     apply_plotly_theme,
     create_donut_chart,
     create_comparative_bar_chart,
 )
 
-st.set_page_config(page_title="Dashboard | SMS Shield 4.0", page_icon="📊", layout="wide")
+st.set_page_config(page_title="SMS Shield | Dashboard", page_icon="📊", layout="wide")
 render_header(
-    "Threat Intelligence Overview",
-    "Dataset distribution telemetry, lexical length profiles, and cross-algorithm comparative benchmarks."
+    "Dashboard",
+    "Dataset telemetry, label distributions, and comparative machine learning benchmarks."
 )
 render_sidebar_status()
 
-# Load data dynamically
+# Load cached data
 try:
     raw_df, clean_df, duplicates_count = get_dataset()
     eval_data = get_evaluation_metrics()
     metrics_df = eval_data["metrics_df"]
 except Exception as e:
-    st.error(f"Error loading dashboard resources: {e}")
+    st.error(f"Error loading dashboard data: {e}")
     st.stop()
 
 # -----------------------------------------------------------------------------
-# 1. Metric KPI Cards Row
+# 1. Summary KPI Cards
 # -----------------------------------------------------------------------------
-total_raw = len(raw_df)
 total_clean = len(clean_df)
 spam_count = int((clean_df["label"] == "spam").sum())
 ham_count = int((clean_df["label"] == "ham").sum())
@@ -68,112 +64,105 @@ spam_pct = (spam_count / total_clean) * 100
 best_f1_idx = metrics_df["F1-Score"].idxmax()
 best_model_name = metrics_df.loc[best_f1_idx, "Model"]
 best_f1_score = metrics_df.loc[best_f1_idx, "F1-Score"]
-best_prec = metrics_df["Precision"].max()
-best_prec_model = metrics_df.loc[metrics_df["Precision"].idxmax(), "Model"]
 
-c1, c2, c3, c4, c5, c6 = st.columns(6)
-render_kpi_card(c1, "Total Corpus", f"{total_clean:,}", f"{duplicates_count:,} duplicates dropped", accent_border=PRIMARY_VIOLET)
-render_kpi_card(c2, "Malicious (Spam)", f"{spam_count:,}", f"{spam_pct:.1f}% ratio", accent_border=DANGER_RED)
-render_kpi_card(c3, "Legitimate (Ham)", f"{ham_count:,}", f"{100 - spam_pct:.1f}% ratio", accent_border=SUCCESS_GREEN)
-render_kpi_card(c4, "Active Models", "3 Models", "NB, LR, Linear SVM", accent_border=CYAN_ACCENT)
-render_kpi_card(c5, "Peak F1-Score", f"{best_f1_score:.2%}", best_model_name, accent_border="#EC4899")
-render_kpi_card(c6, "Peak Precision", f"{best_prec:.2%}", best_prec_model, accent_border="#F59E0B")
+c1, c2, c3, c4 = st.columns(4)
+render_kpi_card(c1, "Total Corpus", f"{total_clean:,}", f"{duplicates_count:,} duplicates dropped")
+render_kpi_card(c2, "Spam Messages", f"{spam_count:,}", f"{spam_pct:.1f}% ratio")
+render_kpi_card(c3, "Legitimate (Ham)", f"{ham_count:,}", f"{100 - spam_pct:.1f}% ratio")
+render_kpi_card(c4, "Top F1-Score", f"{best_f1_score:.2%}", best_model_name)
 
-st.markdown("<div style='margin-top: 18px;'></div>", unsafe_allow_html=True)
+st.write("")
 
 # -----------------------------------------------------------------------------
-# 2. Visualizations: Row 1 (Class Distribution & Character Length Distribution)
+# 2. Dataset Distributions Row
 # -----------------------------------------------------------------------------
-st.markdown("### 📊 Dataset Exploration & Class Imbalance")
+st.markdown("#### Dataset Analysis")
+
 chart_col1, chart_col2 = st.columns(2)
 
 with chart_col1:
-    st.markdown("##### 🍩 Label Imbalance Distribution (Ham vs. Spam)")
+    st.caption("Class Distribution (Ham vs. Spam)")
     donut_fig = create_donut_chart(
-        labels=["Legitimate (Ham)", "Malicious (Spam)"],
+        labels=["Legitimate (Ham)", "Spam"],
         values=[ham_count, spam_count],
-        colors=[CYAN_ACCENT, DANGER_RED],
-        title="",
-        center_text=f"{total_clean:,} MSGS",
-        height=350,
+        colors=[SECONDARY_ACCENT, DANGER_RED],
+        center_text=f"{total_clean:,}",
+        height=280,
     )
     st.plotly_chart(donut_fig, use_container_width=True)
 
 with chart_col2:
-    st.markdown("##### 📈 Character Length Profiling (Ham vs. Spam)")
+    st.caption("Message Character Length Distribution")
     len_fig = go.Figure()
     
-    # Ham messages
     ham_lengths = clean_df[clean_df["label"] == "ham"]["char_length"]
+    spam_lengths = clean_df[clean_df["label"] == "spam"]["char_length"]
+    
     len_fig.add_trace(
         go.Histogram(
             x=ham_lengths,
-            name="Ham (Legitimate)",
-            marker_color=CYAN_ACCENT,
-            opacity=0.75,
-            nbinsx=45,
+            name="Ham",
+            marker_color=SECONDARY_ACCENT,
+            opacity=0.7,
+            nbinsx=40,
             hovertemplate="Length: %{x} chars<br>Count: %{y}<extra></extra>"
         )
     )
-    
-    # Spam messages
-    spam_lengths = clean_df[clean_df["label"] == "spam"]["char_length"]
     len_fig.add_trace(
         go.Histogram(
             x=spam_lengths,
-            name="Spam (Malicious)",
+            name="Spam",
             marker_color=DANGER_RED,
-            opacity=0.75,
-            nbinsx=45,
+            opacity=0.7,
+            nbinsx=40,
             hovertemplate="Length: %{x} chars<br>Count: %{y}<extra></extra>"
         )
     )
     
-    apply_plotly_theme(len_fig, height=350)
+    apply_plotly_theme(len_fig, height=280)
     len_fig.update_layout(
         barmode="overlay",
-        xaxis=dict(title="Character Length per Message", range=[0, 250]),
-        yaxis=dict(title="Frequency"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        xaxis=dict(title="Characters per Message", range=[0, 240]),
+        yaxis=dict(title="Count"),
     )
     st.plotly_chart(len_fig, use_container_width=True)
 
-st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+st.write("")
 
 # -----------------------------------------------------------------------------
-# 3. Visualizations: Row 2 (Comparative Model Performance Summary)
+# 3. Model Performance Comparison Row
 # -----------------------------------------------------------------------------
-st.markdown("### 🏆 Three-Model Comparative Performance Benchmarks")
-c_bar, c_table = st.columns([1.5, 1])
+st.markdown("#### Classifier Performance")
+
+c_bar, c_table = st.columns([1.3, 1])
 
 with c_bar:
-    st.markdown("##### 📊 Cross-Metric Performance Comparison")
+    st.caption("Comparative Metrics Across Models")
     comp_fig = create_comparative_bar_chart(
         metrics_df,
         model_col="Model",
-        metric_cols=["Accuracy", "Precision", "Recall", "F1-Score", "ROC-AUC"],
-        colors=[PRIMARY_VIOLET, CYAN_ACCENT, SUCCESS_GREEN, "#F59E0B", "#EC4899"],
-        height=380,
+        metric_cols=["Accuracy", "Precision", "Recall", "F1-Score"],
+        colors=[PRIMARY_ACCENT, SECONDARY_ACCENT, SUCCESS_GREEN, "#FBBF24"],
+        height=320,
     )
     st.plotly_chart(comp_fig, use_container_width=True)
 
 with c_table:
-    st.markdown("##### 📋 Quantitative Metric Matrix")
-    disp_df = metrics_df[["Model", "Accuracy", "Precision", "Recall", "F1-Score", "ROC-AUC"]].copy()
-    for col in ["Accuracy", "Precision", "Recall", "F1-Score", "ROC-AUC"]:
+    st.caption("Quantitative Evaluation Table")
+    disp_df = metrics_df[["Model", "Accuracy", "Precision", "Recall", "F1-Score"]].copy()
+    for col in ["Accuracy", "Precision", "Recall", "F1-Score"]:
         disp_df[col] = disp_df[col].apply(lambda v: f"{v * 100:.2f}%")
     st.dataframe(disp_df, use_container_width=True, hide_index=True)
 
     st.markdown(
         """
-        <div class="cyber-card" style="border-left: 3px solid #8B5CF6; margin-top: 12px;">
-            <div style="font-size: 0.82rem; font-weight: 700; color: #C4B5FD; text-transform: uppercase;">
-                Operational Security Insights
+        <div class="saas-card" style="padding: 12px 14px; margin-top: 10px;">
+            <div style="font-size: 0.78rem; font-weight: 600; color: #F1F5F9;">
+                Model Trade-offs
             </div>
-            <div style="font-size: 0.85rem; color: #CBD5E1; margin-top: 6px; line-height: 1.5;">
-                • <strong>Multinomial Naive Bayes</strong> achieves highest precision (<strong>98.99%</strong>), yielding near-zero false alarms.<br>
-                • <strong>Linear SVM</strong> delivers highest spam recall (<strong>87.02%</strong>) and peak F1-score (<strong>92.31%</strong>), minimizing evasions.<br>
-                • <em>Ensemble consensus combines both strengths for production filtering.</em>
+            <div style="font-size: 0.8rem; color: #9CA3AF; margin-top: 4px; line-height: 1.45;">
+                • <strong>Naive Bayes:</strong> Highest precision (98.99%), practically zero false alarms.<br>
+                • <strong>Linear SVM:</strong> Highest spam recall (87.02%) and peak F1-score (92.31%).
             </div>
         </div>
         """,

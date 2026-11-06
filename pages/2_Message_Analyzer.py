@@ -1,9 +1,9 @@
 """
-SMS Shield 4.0 - Page 2: Threat Analysis Workspace
+SMS Shield 4.0 - Page 2: Message Analyzer
 Author: SMS Shield NLP Project
 
-Interactive real-time classification interface featuring 3-model consensus,
-raw statistical model probabilities, heuristic signals, and token-level TF-IDF weights.
+Polished real-time classification interface with 3-model consensus,
+side-by-side probability indicators, heuristic pattern analysis, and token influence.
 """
 
 import sys
@@ -19,25 +19,24 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.ui_components import (
     render_header,
     render_sidebar_status,
-    render_kpi_card,
     get_predictor,
 )
 from src.ui_theme import (
     CARD_BG,
     BORDER_COLOR,
-    PRIMARY_VIOLET,
-    CYAN_ACCENT,
+    PRIMARY_ACCENT,
+    SECONDARY_ACCENT,
     SUCCESS_GREEN,
     DANGER_RED,
     TEXT_PRIMARY,
-    TEXT_MUTED,
+    TEXT_SECONDARY,
     apply_plotly_theme,
 )
 
-st.set_page_config(page_title="Threat Analyzer | SMS Shield 4.0", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="SMS Shield | Message Analyzer", page_icon="🔍", layout="wide")
 render_header(
-    "Threat Analysis Workspace",
-    "Inspect SMS payloads in real time with 3-model consensus voting, probability meters, and token explainability."
+    "Message Analyzer",
+    "Real-time SMS classification with multi-model consensus, probability indicators, and token influence."
 )
 render_sidebar_status()
 
@@ -52,16 +51,16 @@ except Exception as e:
 # 1. Quick Presets
 # -----------------------------------------------------------------------------
 presets = {
-    "🎁 Lottery Scam (Spam)": "WINNER!! As a valued customer you have won a £1,000 cash prize reward! Call 09061701461 to claim. Valid 12 hours.",
-    "🏦 Urgent Bank Phish (Spam)": "URGENT! Your debit card has been suspended due to suspicious activity. Visit https://secure-bank-verify.com to re-activate.",
-    "☕ Friendly Lunch (Ham)": "Hey! Are we still on for lunch at 1 PM today? Let me know if you want to invite Sarah too.",
-    "💬 Casual Chat (Ham)": "Ok lar... Joking wif u oni... I'll see you at home in 20 minutes!",
+    "Lottery Scam": "WINNER!! As a valued customer you have won a £1,000 cash prize reward! Call 09061701461 to claim. Valid 12 hours.",
+    "Bank Phish": "URGENT! Your debit card has been suspended due to suspicious activity. Visit https://secure-bank-verify.com to re-activate.",
+    "Friendly Lunch": "Hey! Are we still on for lunch at 1 PM today? Let me know if you want to invite Sarah too.",
+    "Casual Chat": "Ok lar... Joking wif u oni... I will see you at home in 20 minutes!",
 }
 
-st.markdown("##### ⚡ Quick Threat Presets (Click to Test)")
-cols = st.columns(len(presets))
+st.caption("Load a test preset:")
+p_cols = st.columns(len(presets))
 for idx, (label, text_val) in enumerate(presets.items()):
-    if cols[idx].button(label, use_container_width=True):
+    if p_cols[idx].button(label, use_container_width=True):
         st.session_state["analyzer_input"] = text_val
 
 default_text = st.session_state.get(
@@ -70,71 +69,62 @@ default_text = st.session_state.get(
 )
 
 # -----------------------------------------------------------------------------
-# 2. Message Input Form
+# 2. Input Message Form
 # -----------------------------------------------------------------------------
 user_text = st.text_area(
-    "SMS Message Payload:",
+    "Message text:",
     value=default_text,
-    height=100,
-    placeholder="Type or paste any SMS text message here for threat inspection..."
+    height=90,
+    placeholder="Type or paste any SMS message to analyze..."
 )
 
-analyze_clicked = st.button("🔍 Scan & Inspect Message Payload", type="primary", use_container_width=True)
+analyze_clicked = st.button("Analyze Message", type="primary", use_container_width=True)
 
 if not user_text or not user_text.strip():
-    st.warning("⚠️ Please enter a non-empty SMS message above.")
+    st.warning("Please enter an SMS message to analyze.")
     st.stop()
 
 # Run Prediction
 result = predictor.predict_single(user_text)
 
 if not result.get("is_valid", False):
-    st.warning(f"⚠️ {result.get('error', 'Invalid input')}")
+    st.warning(f"{result.get('error', 'Invalid input')}")
     st.stop()
 
 models_data = result["models"]
 heuristics = result["heuristics"]
 
 # -----------------------------------------------------------------------------
-# 3. Message Structural Telemetry Row
+# 3. Main Result Panel
 # -----------------------------------------------------------------------------
-m1, m2, m3, m4 = st.columns(4)
-render_kpi_card(m1, "Payload Length", f"{heuristics['char_count']} chars", "Character Count", accent_border=CYAN_ACCENT)
-render_kpi_card(m2, "Token Count", f"{heuristics['word_count']} words", "Word Token Units", accent_border=PRIMARY_VIOLET)
-render_kpi_card(m3, "Length Profile", heuristics["length_category"], "Density Profile", accent_border="#EC4899")
-render_kpi_card(m4, "Heuristic Risk", heuristics["heuristic_risk_level"], "Lexical Signals", accent_border=DANGER_RED if "High" in heuristics["heuristic_risk_level"] else SUCCESS_GREEN)
-
-st.write("")
-
-# -----------------------------------------------------------------------------
-# 4. Consensus Verdict Banner
-# -----------------------------------------------------------------------------
-is_spam_consensus = (result["consensus"] == "SPAM")
-banner_class = "verdict-banner-spam" if is_spam_consensus else "verdict-banner-ham"
-banner_color = DANGER_RED if is_spam_consensus else SUCCESS_GREEN
-banner_icon = "🚨" if is_spam_consensus else "🟢"
-banner_title = "CRITICAL THREAT DETECTED: SPAM" if is_spam_consensus else "VERIFIED SECURE: LEGITIMATE HAM"
+is_spam = (result["consensus"] == "SPAM")
+box_class = "verdict-box-spam" if is_spam else "verdict-box-ham"
+pill_class = "saas-pill-spam" if is_spam else "saas-pill-ham"
+verdict_title = "Spam Detected" if is_spam else "Legitimate Message (Ham)"
+detail_text = (
+    f"{result['consensus_detail']} • {result['spam_votes']} of 3 models flagged as spam"
+    if is_spam
+    else f"{result['consensus_detail']} • {result['ham_votes']} of 3 models verified as legitimate"
+)
 
 st.markdown(
     f"""
-    <div class="{banner_class}">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div class="{box_class}">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div>
-                <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: {banner_color};">
-                    Ensemble Decision Engine
+                <div style="font-size: 0.74rem; font-weight: 600; text-transform: uppercase; color: {'#F87171' if is_spam else '#34D399'}; letter-spacing: 0.04em;">
+                    Consensus Verdict
                 </div>
-                <div style="font-size: 1.55rem; font-weight: 800; color: #FFFFFF; margin-top: 4px;">
-                    {banner_icon} {banner_title}
+                <div style="font-size: 1.35rem; font-weight: 600; color: #F1F5F9; margin-top: 2px;">
+                    {verdict_title}
                 </div>
-                <div style="font-size: 0.9rem; color: #E2E8F0; margin-top: 4px;">
-                    Voting Alignment: <strong>{result['consensus_detail']}</strong> | Spam Votes: <strong>{result['spam_votes']}/3</strong> | Ham Votes: <strong>{result['ham_votes']}/3</strong>
+                <div style="font-size: 0.85rem; color: #9CA3AF; margin-top: 4px;">
+                    {detail_text}
                 </div>
             </div>
-            <div style="text-align: right;">
-                <span class="status-pill {'threat' if is_spam_consensus else 'success'}" style="font-size: 0.9rem; padding: 8px 16px;">
-                    {result['consensus']}
-                </span>
-            </div>
+            <span class="saas-pill {pill_class}">
+                {result['consensus']}
+            </span>
         </div>
     </div>
     """,
@@ -142,77 +132,71 @@ st.markdown(
 )
 
 # -----------------------------------------------------------------------------
-# 5. Three Individual Model Verdict Cards
+# 4. Side-by-Side Model Comparison
 # -----------------------------------------------------------------------------
-st.markdown("### 🤖 Multi-Algorithm Inference Telemetry")
+st.markdown("#### Model Breakdown")
 col_nb, col_lr, col_svc = st.columns(3)
 
-def render_model_telemetry_card(col, model_info, accent_color):
+def render_model_box(col, m_info):
     with col:
-        is_spam = (model_info["pred"] == 1)
+        m_is_spam = (m_info["pred"] == 1)
         st.markdown(
             f"""
-            <div class="cyber-card" style="border-top: 3px solid {accent_color}; margin-bottom: 10px;">
+            <div class="saas-card" style="padding: 16px; margin-bottom: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: 700; font-size: 1.05rem; color: #F8FAFC;">{model_info['name']}</span>
-                    <span class="status-pill {'threat' if is_spam else 'success'}" style="font-size: 0.76rem;">
-                        {'🚨 SPAM' if is_spam else '🟢 HAM'}
+                    <span style="font-size: 0.92rem; font-weight: 600; color: #F1F5F9;">{m_info['name']}</span>
+                    <span class="saas-pill {'saas-pill-spam' if m_is_spam else 'saas-pill-ham'}" style="font-size: 0.72rem;">
+                        {'Spam' if m_is_spam else 'Ham'}
                     </span>
                 </div>
-                <div style="margin-top: 14px; font-size: 0.86rem; color: #94A3B8;">
-                    Spam Probability: <strong style="font-size: 1.1rem; color: {'#F87171' if is_spam else '#F8FAFC'};">{model_info['prob_spam']:.2%}</strong>
+                <div style="margin-top: 14px; font-size: 0.82rem; color: #9CA3AF;">
+                    Spam Probability: <strong style="color: {'#F87171' if m_is_spam else '#F1F5F9'}; font-size: 0.95rem;">{m_info['prob_spam']:.1%}</strong>
                 </div>
-                <div style="font-size: 0.82rem; color: #64748B; margin-top: 2px;">
-                    Ham Probability: {model_info['prob_ham']:.2%}
+                <div style="font-size: 0.78rem; color: #6B7280; margin-top: 2px;">
+                    Ham Probability: {m_info['prob_ham']:.1%}
                 </div>
             </div>
             """,
             unsafe_allow_html=True
         )
-        st.progress(float(model_info["prob_spam"]))
+        st.progress(float(m_info["prob_spam"]))
 
-render_model_telemetry_card(col_nb, models_data["naive_bayes"], PRIMARY_VIOLET)
-render_model_telemetry_card(col_lr, models_data["logistic_regression"], CYAN_ACCENT)
-render_model_telemetry_card(col_svc, models_data["linear_svm"], SUCCESS_GREEN)
+render_model_box(col_nb, models_data["naive_bayes"])
+render_model_box(col_lr, models_data["logistic_regression"])
+render_model_box(col_svc, models_data["linear_svm"])
 
-st.markdown(
-    """
-    <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid #26334D; border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; color: #94A3B8; margin-top: 10px;">
-        ⚠️ <strong>Statistical Output Probability Notice</strong>: The confidence percentages above represent raw mathematical posteriors/margins derived from training data distributions. They indicate internal model confidence rather than real-world frequency of occurrence.
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.caption("Note: Percentages reflect raw statistical model probabilities derived from training priors, not calibrated real-world risk scores.")
 
-st.divider()
+st.write("")
 
 # -----------------------------------------------------------------------------
-# 6. Heuristic Signals & Token TF-IDF Feature Contributions
+# 5. Heuristic Indicators & Token Influence
 # -----------------------------------------------------------------------------
 exp_c1, exp_c2 = st.columns([1, 1.2])
 
 with exp_c1:
-    st.markdown("### 🚩 Heuristic Indicator Scan")
-    st.caption("Deterministic lexical patterns commonly exploited in SMS phishing campaigns.")
+    st.markdown("#### Pattern Indicators")
+    st.caption("Rule-based checks for common SMS spam patterns.")
 
-    signals_found = []
+    signals = []
     if heuristics["suspicious_keywords"]:
-        signals_found.append(f"**Promotional Keywords:** `{', '.join(heuristics['suspicious_keywords'])}`")
+        signals.append(("Keywords", ", ".join(heuristics["suspicious_keywords"])))
     if heuristics["has_url"]:
-        signals_found.append(f"**Web Link / URL Detected:** `{', '.join(heuristics['urls_found'])}`")
+        signals.append(("Web Links", ", ".join(heuristics["urls_found"])))
     if heuristics["has_phone_number"]:
-        signals_found.append(f"**Phone / Premium Shortcode:** `{', '.join(heuristics['phones_found'])}`")
+        signals.append(("Phone Numbers", ", ".join(heuristics["phones_found"])))
     if heuristics["has_currency"]:
-        signals_found.append(f"**Currency Symbols:** `{', '.join(heuristics['currencies_found'])}`")
+        signals.append(("Currency", ", ".join(heuristics["currencies_found"])))
     if heuristics["uppercase_words"]:
-        signals_found.append(f"**High-Urgency ALL-CAPS Words:** `{', '.join(heuristics['uppercase_words'])}`")
+        signals.append(("ALL-CAPS", ", ".join(heuristics["uppercase_words"])))
 
-    if signals_found:
-        for s in signals_found:
+    if signals:
+        for cat, val in signals:
             st.markdown(
                 f"""
-                <div style="background: #151E33; border: 1px solid #26334D; border-left: 3px solid #F59E0B; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 0.88rem;">
-                    {s}
+                <div class="saas-card" style="padding: 10px 14px; margin-bottom: 8px;">
+                    <div style="font-size: 0.74rem; font-weight: 500; text-transform: uppercase; color: #9CA3AF;">{cat}</div>
+                    <div style="font-size: 0.86rem; color: #F1F5F9; margin-top: 2px; font-family: monospace;">{val}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -220,21 +204,23 @@ with exp_c1:
     else:
         st.markdown(
             """
-            <div style="background: #151E33; border: 1px solid #26334D; border-left: 3px solid #10B981; border-radius: 8px; padding: 12px 14px;">
-                <span style="color: #34D399; font-weight: 600;">✅ Clean Payload</span><br>
-                <span style="color: #94A3B8; font-size: 0.85rem;">No predatory shortcodes, high-pressure urgency words, or suspicious hyperlinks detected.</span>
+            <div class="saas-card" style="padding: 14px 16px;">
+                <span style="color: #34D399; font-size: 0.88rem; font-weight: 500;">✓ Clean Message</span>
+                <div style="color: #9CA3AF; font-size: 0.82rem; margin-top: 2px;">
+                    No suspicious keywords, URLs, phone shortcodes, or urgency indicators detected.
+                </div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
 with exp_c2:
-    st.markdown("### 🔬 Token TF-IDF Feature Influence")
-    st.caption("Active vocabulary tokens and their learned weights pushing classification toward Spam or Ham.")
+    st.markdown("#### Token Influence")
+    st.caption("Vocabulary tokens that contributed most toward Spam or Ham.")
     feat_df = result.get("feature_explanation", pd.DataFrame())
+    
     if not feat_df.empty:
-        # Create interactive horizontal bar chart for top token contributions
-        top_tokens = feat_df.head(8).copy()
+        top_tokens = feat_df.head(6).copy()
         
         fig_tokens = go.Figure()
         fig_tokens.add_trace(
@@ -242,22 +228,16 @@ with exp_c2:
                 y=top_tokens["Token"],
                 x=top_tokens["LR Weight"],
                 orientation="h",
-                marker_color=[DANGER_RED if w > 0 else CYAN_ACCENT for w in top_tokens["LR Weight"]],
+                marker_color=[DANGER_RED if w > 0 else SECONDARY_ACCENT for w in top_tokens["LR Weight"]],
                 hovertemplate="Token: <b>%{y}</b><br>Weight: %{x:.3f}<extra></extra>"
             )
         )
-        apply_plotly_theme(fig_tokens, height=260)
+        apply_plotly_theme(fig_tokens, height=220)
         fig_tokens.update_layout(
-            margin=dict(l=60, r=20, t=20, b=20),
-            xaxis=dict(title="Logistic Regression Weight (Positive = Spam, Negative = Ham)"),
+            margin=dict(l=60, r=15, t=10, b=25),
+            xaxis=dict(title="Weight (Positive = Spam, Negative = Ham)"),
             yaxis=dict(title="", autorange="reversed")
         )
         st.plotly_chart(fig_tokens, use_container_width=True)
-
-        st.dataframe(
-            feat_df[["Token", "TF-IDF Value", "LR Weight", "SVM Weight", "Direction"]].head(8),
-            use_container_width=True,
-            hide_index=True
-        )
     else:
-        st.info("No vocabulary tokens remained after punctuation and stopword filtering.")
+        st.info("No active vocabulary tokens remained after punctuation and stopword removal.")
