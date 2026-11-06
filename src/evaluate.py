@@ -1,17 +1,27 @@
 """
-SMS Shield - Model Evaluation and Visualization Module
+SMS Shield 2.0 - Advanced Model Evaluation & Visualization Suite
 Author: SMS Shield NLP Project
 
-This module provides functions to evaluate machine learning classification models,
-compute key performance metrics (Accuracy, Precision, Recall, F1-Score, Confusion Matrix),
-and generate publication-quality visual plots using Matplotlib and Seaborn.
+This module provides comprehensive evaluation metrics, diagnostic curves,
+and publication-grade visualization plots for:
+1. Multinomial Naive Bayes
+2. Logistic Regression
+3. Linear Support Vector Machine (LinearSVC)
+
+Capabilities:
+- Metric computation (Accuracy, Precision, Recall, F1-Score, Confusion Matrix, Classification Reports, ROC-AUC).
+- Confusion Matrix Heatmaps.
+- Multi-Model Grouped Bar Charts.
+- ROC Curves with Area Under the Curve (AUC).
+- Precision-Recall Curves with Average Precision (AP).
+- 5-Fold Stratified Cross-Validation reporting.
 """
 
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 
 import matplotlib
-matplotlib.use("Agg")  # Non-interactive backend for headless environments & scripts
+matplotlib.use("Agg")  # Headless backend
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -23,16 +33,23 @@ from sklearn.metrics import (
     f1_score,
     confusion_matrix,
     classification_report,
+    roc_curve,
+    auc,
+    roc_auc_score,
+    precision_recall_curve,
+    average_precision_score,
 )
 
 
 def compute_metrics(
     y_true: np.ndarray,
     y_pred: np.ndarray,
+    y_scores: Optional[np.ndarray] = None,
     model_name: str = "Model"
 ) -> Dict[str, Any]:
     """
     Computes standard evaluation metrics for binary SMS spam classification.
+    Optionally computes ROC-AUC if probability / decision scores are provided.
 
     Parameters
     ----------
@@ -40,20 +57,30 @@ def compute_metrics(
         True binary labels (0 = Ham, 1 = Spam).
     y_pred : np.ndarray
         Predicted binary labels (0 = Ham, 1 = Spam).
+    y_scores : np.ndarray, optional
+        Predicted spam probabilities or continuous decision scores.
     model_name : str
-        Human-readable name of the evaluated model.
+        Display name of the model.
 
     Returns
     -------
     dict
-        Dictionary containing Accuracy, Precision, Recall, F1-Score,
-        Confusion Matrix, and detailed classification report dictionary.
+        Dictionary containing metric values, counts, and classification report.
     """
     acc = float(accuracy_score(y_true, y_pred))
     prec = float(precision_score(y_true, y_pred, pos_label=1, zero_division=0))
     rec = float(recall_score(y_true, y_pred, pos_label=1, zero_division=0))
     f1 = float(f1_score(y_true, y_pred, pos_label=1, zero_division=0))
     cm = confusion_matrix(y_true, y_pred)
+    tn, fp, fn, tp = cm.ravel()
+
+    roc_auc = None
+    if y_scores is not None:
+        try:
+            roc_auc = float(roc_auc_score(y_true, y_scores))
+        except Exception:
+            roc_auc = None
+
     report = classification_report(
         y_true,
         y_pred,
@@ -62,15 +89,13 @@ def compute_metrics(
         zero_division=0
     )
 
-    # Detailed confusion matrix counts
-    tn, fp, fn, tp = cm.ravel()
-
     return {
         "model_name": model_name,
         "accuracy": acc,
         "precision": prec,
         "recall": rec,
         "f1_score": f1,
+        "roc_auc": roc_auc,
         "confusion_matrix": cm,
         "true_negatives": int(tn),
         "false_positives": int(fp),
@@ -86,28 +111,9 @@ def plot_confusion_matrix(
     save_path: Optional[Path] = None,
     cmap: str = "Blues"
 ) -> plt.Figure:
-    """
-    Generates an annotated confusion matrix heatmap.
+    """Generates an annotated confusion matrix heatmap."""
+    fig, ax = plt.subplots(figsize=(5.5, 4.6), dpi=300)
 
-    Parameters
-    ----------
-    cm : np.ndarray
-        2x2 confusion matrix array [[TN, FP], [FN, TP]].
-    model_name : str
-        Model title for the plot.
-    save_path : Optional[Path]
-        File path to save the generated figure.
-    cmap : str
-        Color map palette for the heatmap.
-
-    Returns
-    -------
-    plt.Figure
-        Matplotlib figure object.
-    """
-    fig, ax = plt.subplots(figsize=(6, 5), dpi=300)
-
-    # Annotations displaying both raw counts and percentage of total
     total = np.sum(cm)
     group_counts = [f"{val:,}" for val in cm.flatten()]
     group_percentages = [f"{val / total:.2%}" for val in cm.flatten()]
@@ -128,15 +134,15 @@ def plot_confusion_matrix(
         square=True,
         linewidths=1.5,
         linecolor="white",
-        xticklabels=["Predicted Ham (0)", "Predicted Spam (1)"],
-        yticklabels=["Actual Ham (0)", "Actual Spam (1)"],
+        xticklabels=["Predicted Ham", "Predicted Spam"],
+        yticklabels=["Actual Ham", "Actual Spam"],
         ax=ax,
-        annot_kws={"size": 11, "weight": "bold"},
+        annot_kws={"size": 10.5, "weight": "bold"},
     )
 
-    ax.set_title(f"Confusion Matrix: {model_name}", fontsize=13, fontweight="bold", pad=12)
-    ax.set_xlabel("Predicted Label", fontsize=11, fontweight="bold")
-    ax.set_ylabel("True Label", fontsize=11, fontweight="bold")
+    ax.set_title(f"Confusion Matrix: {model_name}", fontsize=12, fontweight="bold", pad=12)
+    ax.set_xlabel("Predicted Label", fontsize=10.5, fontweight="bold")
+    ax.set_ylabel("True Label", fontsize=10.5, fontweight="bold")
     plt.tight_layout()
 
     if save_path:
@@ -152,24 +158,11 @@ def plot_model_comparison_bar(
     save_path: Optional[Path] = None
 ) -> plt.Figure:
     """
-    Creates a grouped bar chart comparing Accuracy, Precision, Recall, and F1-score
-    across the two models.
-
-    Parameters
-    ----------
-    metrics_df : pd.DataFrame
-        DataFrame with columns ['Model', 'Accuracy', 'Precision', 'Recall', 'F1-Score'].
-    save_path : Optional[Path]
-        File path to save the generated plot.
-
-    Returns
-    -------
-    plt.Figure
-        Matplotlib figure object.
+    Generates a grouped bar chart comparing Accuracy, Precision, Recall, and F1-Score
+    across all evaluated models.
     """
-    fig, ax = plt.subplots(figsize=(8.5, 5), dpi=300)
+    fig, ax = plt.subplots(figsize=(9, 4.8), dpi=300)
 
-    # Melt dataframe into long format for seaborn barplot
     df_melted = metrics_df.melt(
         id_vars=["Model"],
         value_vars=["Accuracy", "Precision", "Recall", "F1-Score"],
@@ -177,31 +170,30 @@ def plot_model_comparison_bar(
         value_name="Score"
     )
 
-    palette = ["#1f77b4", "#ff7f0e"]
+    palette = ["#2563eb", "#059669", "#7c3aed"]  # Blue, Green, Purple
     barplot = sns.barplot(
         data=df_melted,
         x="Metric",
         y="Score",
         hue="Model",
-        palette=palette,
+        palette=palette[:len(metrics_df["Model"].unique())],
         edgecolor="black",
         linewidth=0.8,
         ax=ax
     )
 
-    ax.set_ylim(0.0, 1.10)
+    ax.set_ylim(0.0, 1.12)
     ax.set_title(
-        "Comparative Model Performance: Multinomial NB vs Logistic Regression",
+        "Comparative Model Performance: NB vs. LR vs. Linear SVM",
         fontsize=13,
         fontweight="bold",
         pad=14
     )
-    ax.set_ylabel("Metric Score", fontsize=11, fontweight="bold")
-    ax.set_xlabel("Evaluation Metric", fontsize=11, fontweight="bold")
-    ax.grid(axis="y", linestyle="--", alpha=0.4)
+    ax.set_ylabel("Metric Score", fontsize=10.5, fontweight="bold")
+    ax.set_xlabel("Evaluation Metric", fontsize=10.5, fontweight="bold")
+    ax.grid(axis="y", linestyle="--", alpha=0.35)
     ax.legend(title="Model", frameon=True, loc="upper right")
 
-    # Add numeric score annotations above bars
     for p in barplot.patches:
         height = p.get_height()
         if not np.isnan(height) and height > 0:
@@ -210,12 +202,94 @@ def plot_model_comparison_bar(
                 (p.get_x() + p.get_width() / 2.0, height),
                 ha="center",
                 va="bottom",
-                fontsize=9.5,
+                fontsize=8.5,
                 fontweight="bold",
-                xytext=(0, 3),
+                xytext=(0, 2),
                 textcoords="offset points",
             )
 
+    plt.tight_layout()
+
+    if save_path:
+        save_path = Path(save_path)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_path, bbox_inches="tight")
+
+    return fig
+
+
+def plot_roc_curves(
+    model_curves: Dict[str, Tuple[np.ndarray, np.ndarray, float]],
+    save_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Plots Receiver Operating Characteristic (ROC) curves for multiple models.
+
+    Parameters
+    ----------
+    model_curves : dict
+        Mapping from model name to (fpr, tpr, roc_auc).
+    save_path : Optional[Path]
+        File path to save the generated figure.
+    """
+    fig, ax = plt.subplots(figsize=(6.5, 5), dpi=300)
+
+    colors = ["#2563eb", "#059669", "#7c3aed"]
+    for idx, (name, (fpr, tpr, roc_auc)) in enumerate(model_curves.items()):
+        color = colors[idx % len(colors)]
+        ax.plot(
+            fpr,
+            tpr,
+            label=f"{name} (AUC = {roc_auc:.4f})",
+            linewidth=2.2,
+            color=color
+        )
+
+    ax.plot([0, 1], [0, 1], "k--", alpha=0.6, label="Chance (AUC = 0.5000)")
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlabel("False Positive Rate (1 - Specificity)", fontsize=10.5, fontweight="bold")
+    ax.set_ylabel("True Positive Rate (Recall / Sensitivity)", fontsize=10.5, fontweight="bold")
+    ax.set_title("Receiver Operating Characteristic (ROC) Curves", fontsize=12, fontweight="bold", pad=12)
+    ax.legend(loc="lower right", frameon=True, fontsize=9.5)
+    ax.grid(True, linestyle="--", alpha=0.35)
+    plt.tight_layout()
+
+    if save_path:
+        save_path = Path(save_path)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_path, bbox_inches="tight")
+
+    return fig
+
+
+def plot_precision_recall_curves(
+    model_pr_curves: Dict[str, Tuple[np.ndarray, np.ndarray, float]],
+    save_path: Optional[Path] = None
+) -> plt.Figure:
+    """
+    Plots Precision-Recall (PR) curves for multiple models.
+    """
+    fig, ax = plt.subplots(figsize=(6.5, 5), dpi=300)
+
+    colors = ["#2563eb", "#059669", "#7c3aed"]
+    for idx, (name, (precision, recall, avg_prec)) in enumerate(model_pr_curves.items()):
+        color = colors[idx % len(colors)]
+        ax.plot(
+            recall,
+            precision,
+            label=f"{name} (AP = {avg_prec:.4f})",
+            linewidth=2.2,
+            color=color
+        )
+
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlabel("Recall", fontsize=10.5, fontweight="bold")
+    ax.set_ylabel("Precision", fontsize=10.5, fontweight="bold")
+    ax.set_title("Precision-Recall Curves (Focus on Spam Class)", fontsize=12, fontweight="bold", pad=12)
+    ax.legend(loc="lower left", frameon=True, fontsize=9.5)
+    ax.grid(True, linestyle="--", alpha=0.35)
     plt.tight_layout()
 
     if save_path:
@@ -231,30 +305,13 @@ def plot_class_distribution(
     label_col: str = "label",
     save_path: Optional[Path] = None
 ) -> plt.Figure:
-    """
-    Visualizes the dataset class distribution (Ham vs Spam).
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Dataset DataFrame.
-    label_col : str
-        Column name containing class labels ('ham' / 'spam').
-    save_path : Optional[Path]
-        File path to save the generated plot.
-
-    Returns
-    -------
-    plt.Figure
-        Matplotlib figure object.
-    """
+    """Visualizes dataset class distribution (Ham vs Spam)."""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4.5), dpi=300)
 
     counts = df[label_col].value_counts()
-    colors = ["#2ca02c", "#d62728"]  # Green for Ham, Red for Spam
+    colors = ["#2563eb", "#dc2626"]  # Blue for Ham, Red for Spam
     labels = [f"{idx.upper()} ({cnt:,})" for idx, cnt in zip(counts.index, counts.values)]
 
-    # Subplot 1: Bar Chart
     sns.barplot(
         x=counts.index.str.upper(),
         y=counts.values,
@@ -265,8 +322,8 @@ def plot_class_distribution(
         edgecolor="black"
     )
     ax1.set_title("Class Frequency", fontsize=12, fontweight="bold")
-    ax1.set_ylabel("Message Count", fontsize=10)
-    ax1.set_xlabel("Class", fontsize=10)
+    ax1.set_ylabel("Message Count", fontsize=10, fontweight="bold")
+    ax1.set_xlabel("Class", fontsize=10, fontweight="bold")
     for p in ax1.patches:
         height = p.get_height()
         ax1.annotate(
@@ -280,7 +337,6 @@ def plot_class_distribution(
             textcoords="offset points",
         )
 
-    # Subplot 2: Donut Chart
     ax2.pie(
         counts.values,
         labels=labels,
