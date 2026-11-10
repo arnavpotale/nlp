@@ -6,6 +6,7 @@ Provides unified SaaS styling, clean page headers, refined sidebar navigation,
 standardized KPI cards, and cached dataset/model loaders.
 """
 
+import sys
 from pathlib import Path
 from typing import Tuple, Dict, Any, Optional
 import pandas as pd
@@ -101,46 +102,24 @@ def render_sidebar_status():
                 unsafe_allow_html=True
             )
 
-        st.markdown(
-            """
-            <div style="font-size: 0.72rem; font-weight: 600; text-transform: uppercase; color: #6B7280; letter-spacing: 0.05em; margin-bottom: 8px;">
-                Platform Navigation
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            """
-            <div style="font-size: 0.85rem; color: #9CA3AF; line-height: 1.8;">
-                <a href="/" target="_self" style="color: #F1F5F9; text-decoration: none;">• Overview</a><br>
-                <a href="/Dashboard" target="_self" style="color: #9CA3AF; text-decoration: none;">• 1. Dashboard</a><br>
-                <a href="/Message_Analyzer" target="_self" style="color: #9CA3AF; text-decoration: none;">• 2. Message Analyzer</a><br>
-                <a href="/NLP_Analysis" target="_self" style="color: #9CA3AF; text-decoration: none;">• 3. NLP Analysis</a><br>
-                <a href="/Model_Evaluation" target="_self" style="color: #9CA3AF; text-decoration: none;">• 4. Model Evaluation</a><br>
-                <a href="/Bulk_Analysis" target="_self" style="color: #9CA3AF; text-decoration: none;">• 5. Bulk Analysis</a><br>
-                <a href="/Robustness_Analysis" target="_self" style="color: #9CA3AF; text-decoration: none;">• 6. Robustness Lab</a>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        st.markdown("<div style='margin-top: 24px;'></div>", unsafe_allow_html=True)
-
-        if st.button("🔄 Retrain Models", use_container_width=True):
-            with st.spinner("Retraining models..."):
-                try:
-                    from src.train import run_training_pipeline
-                    run_training_pipeline()
-                    st.cache_resource.clear()
-                    st.cache_data.clear()
-                    st.success("Retrained successfully.")
-                    st.rerun()
-                except Exception as ex:
-                    st.error(f"Retraining error: {ex}")
+        if sys.platform != "emscripten":
+            if st.button("🔄 Retrain Models", use_container_width=True):
+                with st.spinner("Retraining models..."):
+                    try:
+                        from src.train import run_training_pipeline
+                        run_training_pipeline()
+                        st.cache_resource.clear()
+                        st.cache_data.clear()
+                        st.success("Retrained successfully.")
+                        st.rerun()
+                    except Exception as ex:
+                        st.error(f"Retraining error: {ex}")
+        else:
+            st.caption("Pre-trained models active in browser session.")
 
         st.markdown(
             """
-            <div style="border-top: 1px solid #292F3D; margin-top: 20px; padding-top: 12px; font-size: 0.72rem; color: #6B7280;">
+            <div style="border-top: 1px solid #292F3D; margin-top: 16px; padding-top: 12px; font-size: 0.72rem; color: #6B7280;">
                 Zero Data Leakage Pipeline<br>
                 Stratified 80/20 Test Split (n=1,035)
             </div>

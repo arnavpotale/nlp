@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>SMS Shield 4.0 — Threat Intelligence Platform</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@1.12.1/build/stlite.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #0F1117;
+      color: #F1F5F9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #root {
+      height: 100%;
+    }
+    .stlite-loading-banner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      gap: 12px;
+      color: #9CA3AF;
+    }
+    .stlite-loading-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #F1F5F9;
+    }
+    .stlite-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #292F3D;
+      border-top-color: #8B7CF6;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="stlite-loading-banner">
+      <div class="stlite-spinner"></div>
+      <div class="stlite-loading-title">SMS Shield 4.0</div>
+      <div>Initializing Python NLP &amp; ML runtime in your browser...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@1.12.1/build/stlite.js";
+
+    const assetPaths = [
+      ".streamlit/config.toml",
+      "app.py",
+      "pages/1_Dashboard.py",
+      "pages/2_Message_Analyzer.py",
+      "pages/3_NLP_Analysis.py",
+      "pages/4_Model_Evaluation.py",
+      "pages/5_Bulk_Analysis.py",
+      "pages/6_Robustness_Analysis.py",
+      "src/__init__.py",
+      "src/adversarial.py",
+      "src/bulk_analysis.py",
+      "src/evaluate.py",
+      "src/explainability.py",
+      "src/normalization.py",
+      "src/prediction.py",
+      "src/preprocessing.py",
+      "src/train.py",
+      "src/ui_components.py",
+      "src/ui_theme.py",
+      "data/SMSSpamCollection",
+      "data/sample_bulk_sms.csv",
+      "metrics/adversarial_evaluation.csv",
+      "metrics/adversarial_robustness_bar.png",
+      "metrics/baseline_metrics.csv",
+      "metrics/char_word_comparison.csv",
+      "metrics/char_word_comparison_bar.png",
+      "metrics/class_distribution.png",
+      "metrics/classification_report_lr.csv",
+      "metrics/classification_report_nb.csv",
+      "metrics/classification_report_svc.csv",
+      "metrics/confusion_matrix_lr.png",
+      "metrics/confusion_matrix_nb.png",
+      "metrics/confusion_matrix_svc.png",
+      "metrics/cross_val_metrics.csv",
+      "metrics/evaluation_metrics.csv",
+      "metrics/model_comparison_bar.png",
+      "metrics/pr_curves.png",
+      "metrics/roc_curves.png",
+      "metrics/tfidf_experiments.csv",
+      "models/calibrated_linear_svc.joblib",
+      "models/char_lr.joblib",
+      "models/char_nb.joblib",
+      "models/char_svc.joblib",
+      "models/char_svc_cal.joblib",
+      "models/char_tfidf_vectorizer.joblib",
+      "models/comb_lr.joblib",
+      "models/comb_nb.joblib",
+      "models/comb_svc.joblib",
+      "models/combined_tfidf_vectorizer.joblib",
+      "models/linear_svc.joblib",
+      "models/logistic_regression.joblib",
+      "models/multinomial_nb.joblib",
+      "models/tfidf_vectorizer.joblib",
+      "nltk_data/corpora/stopwords/english",
+      "nltk_data/tokenizers/punkt/english.pickle",
+      "nltk_data/tokenizers/punkt/PY3/english.pickle",
+      "nltk_data/tokenizers/punkt_tab/english/abbrev_types.txt",
+      "nltk_data/tokenizers/punkt_tab/english/collocations.tab",
+      "nltk_data/tokenizers/punkt_tab/english/ortho_context.tab",
+      "nltk_data/tokenizers/punkt_tab/english/sent_starters.txt"
+    ];
+
+    const cleanLocation = window.location.href.split(/[?#]/)[0];
+    const baseDir = cleanLocation.endsWith("/")
+      ? cleanLocation
+      : cleanLocation.replace(/\/[^/]*$/, "/");
+    const basePath = new URL(baseDir).pathname;
+
+    const files = {};
+    for (const path of assetPaths) {
+      files[path] = { url: new URL(path, baseDir).href };
+    }
+
+    mount({
+      entrypoint: "app.py",
+      basePath,
+      requirements: [
+        "numpy",
+        "pandas",
+        "scikit-learn",
+        "joblib",
+        "nltk",
+        "plotly"
+      ],
+      streamlitConfig: {
+        "theme.base": "dark",
+        "theme.primaryColor": "#8B7CF6",
+        "theme.backgroundColor": "#0F1117",
+        "theme.secondaryBackgroundColor": "#141720",
+        "theme.textColor": "#F1F5F9"
+      },
+      files
+    }, document.getElementById("root"));
+  </script>
+</body>
+</html>
+
